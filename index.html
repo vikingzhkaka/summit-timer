@@ -150,25 +150,121 @@ body {
 .node-label { flex: 1; }
 .node-clock { font-size: 11px; color: var(--text-light); font-variant-numeric: tabular-nums; }
 
-/* Alert Overlay */
-.overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.25);
-  display: none; z-index: 200; align-items: center; justify-content: center;
+/* ── Popup Notification Panel ── */
+.popup-panel {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 340px;
+  width: calc(100vw - 32px);
+  pointer-events: none;
 }
-.overlay.show { display: flex; }
-.alert-box {
-  background: #fff; border-radius: 18px; padding: 28px 32px; text-align: center;
-  box-shadow: 0 16px 48px rgba(0,0,0,.25); max-width: 360px; width: 90%;
-  animation: pop-in .25s ease-out;
+@media (max-width: 800px) {
+  .popup-panel {
+    top: auto;
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    max-width: none;
+    width: auto;
+  }
 }
-@keyframes pop-in { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.alert-icon { font-size: 40px; margin-bottom: 10px; }
-.alert-title { font-size: 18px; font-weight: 800; }
-.alert-sub { font-size: 14px; color: var(--text-mid); margin-top: 6px; }
-.alert-dismiss {
-  margin-top: 14px; padding: 9px 22px; background: var(--text); color: #fff;
-  border-radius: 10px; border: none; cursor: pointer; font-weight: 700; font-size: 14px;
+
+.popup-card {
+  pointer-events: auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  animation: popup-slide-in .35s ease-out;
+  position: relative;
+  overflow: hidden;
+  border-left: 5px solid var(--border);
+  transition: opacity .3s, transform .3s;
 }
+.popup-card.is-dismissing {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* Urgency color bands */
+.popup-card[data-urgency="1"] { border-left-color: var(--green); }
+.popup-card[data-urgency="2"] { border-left-color: var(--amber); }
+.popup-card[data-urgency="3"] { border-left-color: var(--orange); }
+.popup-card[data-urgency="4"] { border-left-color: var(--red); }
+.popup-card[data-urgency="5"] { border-left-color: var(--dark-red); }
+.popup-card[data-urgency="6"] { border-left-color: var(--dark-red); }
+.popup-card[data-urgency="7"] { border-left-color: var(--dark-red); }
+.popup-card[data-urgency="8"] { border-left-color: var(--dark-red); }
+
+@keyframes popup-slide-in {
+  from { transform: translateX(60px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.popup-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.popup-close:hover { background: #f1f5f9; color: var(--text); }
+
+.popup-icon { font-size: 28px; margin-bottom: 4px; }
+.popup-title { font-size: 16px; font-weight: 800; color: var(--text); }
+.popup-sub { font-size: 13px; color: var(--text-mid); margin-top: 4px; }
+
+/* Overtime popup: red background pulse */
+.popup-card[data-urgency="5"],
+.popup-card[data-urgency="6"],
+.popup-card[data-urgency="7"],
+.popup-card[data-urgency="8"] {
+  background: #fef2f2;
+  animation: popup-slide-in .35s ease-out, popup-pulse 2s infinite .35s;
+}
+@keyframes popup-pulse {
+  0%,100% { box-shadow: 0 8px 32px rgba(185,28,28,.2); }
+  50%     { box-shadow: 0 8px 32px rgba(185,28,28,.4); }
+}
+.popup-card[data-urgency="5"] .popup-title,
+.popup-card[data-urgency="6"] .popup-title,
+.popup-card[data-urgency="7"] .popup-title,
+.popup-card[data-urgency="8"] .popup-title {
+  color: var(--dark-red);
+}
+
+/* Auto-dismiss countdown bar */
+.popup-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--green);
+  border-radius: 0 0 0 14px;
+  transition: width linear;
+  width: 100%;
+}
+.popup-card[data-urgency="3"] .popup-progress { background: var(--orange); }
+.popup-card[data-urgency="4"] .popup-progress { background: var(--red); }
+.popup-card[data-urgency="5"] .popup-progress,
+.popup-card[data-urgency="6"] .popup-progress,
+.popup-card[data-urgency="7"] .popup-progress,
+.popup-card[data-urgency="8"] .popup-progress { background: var(--dark-red); }
 </style>
 </head>
 <body>
@@ -182,14 +278,7 @@ body {
 
 <div class="grid" id="grid"></div>
 
-<div class="overlay" id="overlay">
-  <div class="alert-box">
-    <div class="alert-icon" id="aIcon"></div>
-    <div class="alert-title" id="aTitle"></div>
-    <div class="alert-sub" id="aSub"></div>
-    <button class="alert-dismiss" onclick="hideOverlay()">知道了</button>
-  </div>
-</div>
+<div class="popup-panel" id="popupPanel"></div>
 
 <script>
 /* ── Config ── */
@@ -202,13 +291,26 @@ const DUR_STEP = 5;   // 步进5分钟
 const DUR_MIN = 5;    // 最短5分钟
 const DUR_MAX = 180;  // 最长180分钟
 
+/* Auto-dismiss time per urgency level (ms). 0 = no auto-dismiss */
+const AUTO_DISMISS_MS = {
+  1: 6000,   // 半程 → 6s
+  2: 8000,   // 剩余15 → 8s
+  3: 10000,  // 剩余10 → 10s
+  4: 15000,  // 剩余5  → 15s
+  5: 0,      // 超时   → 手动关闭
+  6: 0,      // 超时5  → 手动关闭
+  7: 0,      // 超时10 → 手动关闭
+  8: 0,      // 超时15 → 手动关闭
+};
+
 /* ── Notification API availability ── */
 const NOTIF_SUPPORTED = typeof Notification !== 'undefined';
 
 /* ── State ── */
 let timers = [];
 let audioCtx = null;
-let overlayTimer = null;
+let popupIdCounter = 0;
+let activePopups = new Map(); // id → { el, autoTimer, progressTimer }
 
 /* ── Reminder Nodes ── */
 function buildNodes(dur) {
@@ -393,6 +495,8 @@ function resetTimer(i) {
   rerenderNodes(i);
   updateBtn(i);
   updateTitle();
+  // Also dismiss all popups for this agenda
+  dismissPopupsForAgenda(i);
 }
 
 function updateBtn(i) {
@@ -420,7 +524,7 @@ function tick(i) {
   document.getElementById(`remLbl${i}`).textContent = remainSec > 0 ? '剩余时间' : '已超时';
   document.getElementById(`elInfo${i}`).textContent = `已进行 ${fmtTime(totalSec)}`;
 
-  // Progress bar: full at dur, keeps growing in overtime (capped at visual 100%)
+  // Progress bar
   const pct = Math.min(100, (totalSec / (t.dur * 60)) * 100);
   const progEl = document.getElementById(`prog${i}`);
   progEl.style.width = pct + '%';
@@ -436,7 +540,7 @@ function tick(i) {
     remainSec > 5 * 60  ? 'orange' :
     remainSec > 0       ? 'red' : 'overtime';
 
-  // Check nodes (including overtime nodes)
+  // Check nodes
   t.nodes.forEach((nd, ni) => {
     const row = document.getElementById(`nd${i}_${ni}`);
     if (t.hitNodes.has(nd.label)) {
@@ -455,11 +559,9 @@ function tick(i) {
     }
   });
 
-  // State: enter overtime when time runs out, stay running to track overtime nodes
+  // State: enter overtime
   if (remainSec <= 0 && t.state === 'running') {
     t.state = 'overtime';
-    // Keep interval running to track overtime nodes
-    // (interval is already set, no need to re-create)
   }
 
   updateTitle();
@@ -481,26 +583,93 @@ function updateTitle() {
   document.title = `${red.name} ${fmtTime(r)} — 峰会计时`;
 }
 
-/* ── Alert ── */
+/* ── Popup System ── */
 function triggerAlert(i, nd) {
   const t = timers[i];
-  document.getElementById('aIcon').textContent = nd.icon;
-  document.getElementById('aTitle').textContent = `${t.name}: ${nd.label}`;
   const totalSec = t.pausedSec + (Date.now() - t.startTs) / 1000;
   const remainSec = t.dur * 60 - totalSec;
-  document.getElementById('aSub').textContent =
-    remainSec > 0 ? `剩余 ${fmtTime(remainSec)} | 已进行 ${fmtTime(totalSec)}` :
-    `超时 ${fmtTime(-remainSec)} | 已进行 ${fmtTime(totalSec)}`;
-  document.getElementById('overlay').classList.add('show');
-  clearTimeout(overlayTimer);
-  overlayTimer = setTimeout(hideOverlay, nd.urgency >= 5 ? 10000 : 4000);
+
+  const subText = remainSec > 0
+    ? `剩余 ${fmtTime(remainSec)} · 已进行 ${fmtTime(totalSec)}`
+    : `超时 ${fmtTime(-remainSec)} · 已进行 ${fmtTime(totalSec)}`;
+
+  showPopup(i, nd.icon, `${t.name}: ${nd.label}`, subText, nd.urgency);
 
   playBeep(nd.urgency);
   pushNotif(t.name, nd.label, nd.urgency);
 }
 
-function hideOverlay() {
-  document.getElementById('overlay').classList.remove('show');
+function showPopup(agendaIdx, icon, title, sub, urgency) {
+  const panel = document.getElementById('popupPanel');
+  const id = ++popupIdCounter;
+
+  const card = document.createElement('div');
+  card.className = 'popup-card';
+  card.id = `popup${id}`;
+  card.dataset.urgency = urgency;
+  card.dataset.agendaIdx = agendaIdx;
+
+  // Auto-dismiss config
+  const autoMs = AUTO_DISMISS_MS[urgency] || 0;
+
+  card.innerHTML = `
+    <button class="popup-close" onclick="dismissPopup(${id})" title="关闭">✕</button>
+    <div class="popup-icon">${icon}</div>
+    <div class="popup-title">${title}</div>
+    <div class="popup-sub">${sub}</div>
+    ${autoMs > 0 ? `<div class="popup-progress" id="popupProg${id}"></div>` : ''}
+  `;
+
+  panel.appendChild(card);
+
+  const entry = { el: card, autoTimer: null, progressTimer: null };
+  activePopups.set(id, entry);
+
+  // Auto-dismiss countdown bar animation
+  if (autoMs > 0) {
+    const progEl = document.getElementById(`popupProg${id}`);
+    if (progEl) {
+      // Start with full width, shrink to 0 over autoMs
+      progEl.style.transition = `width ${autoMs}ms linear`;
+      // Force layout then trigger
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          progEl.style.width = '0%';
+        });
+      });
+    }
+    entry.autoTimer = setTimeout(() => {
+      dismissPopup(id);
+    }, autoMs);
+  }
+
+  // Limit max visible popups to 5 — dismiss oldest if overflow
+  const allPopupEls = panel.querySelectorAll('.popup-card:not(.is-dismissing)');
+  if (allPopupEls.length > 5) {
+    const oldest = allPopupEls[0];
+    const oldestId = parseInt(oldest.id.replace('popup', ''), 10);
+    dismissPopup(oldestId);
+  }
+}
+
+function dismissPopup(id) {
+  const entry = activePopups.get(id);
+  if (!entry) return;
+  clearTimeout(entry.autoTimer);
+  entry.el.classList.add('is-dismissing');
+  // After animation, remove from DOM
+  setTimeout(() => {
+    if (entry.el.parentNode) entry.el.parentNode.removeChild(entry.el);
+    activePopups.delete(id);
+  }, 300);
+}
+
+function dismissPopupsForAgenda(agendaIdx) {
+  for (const [id, entry] of activePopups) {
+    if (parseInt(entry.el.dataset.agendaIdx) === agendaIdx) {
+      dismissPopup(id);
+    }
+  }
 }
 
 /* ── Audio ── */
@@ -532,12 +701,10 @@ function playBeep(urgency) {
   }
   // Overtime: urgency 5-8 — escalating alarm
   if (urgency >= 5) {
-    const phase = urgency - 5; // 0=超时, 1=+5min, 2=+10min, 3=+15min
+    const phase = urgency - 5;
     const freq = 800 + phase * 100;
-    // Initial burst
     const burstCount = 3 + phase;
     for (let b = 0; b < burstCount; b++) beep(freq, 0.18, 0.3 + b * 0.24);
-    // Rapid follow-up
     const rapidCount = 2 + phase;
     const rapidStart = 0.3 + burstCount * 0.24 + 0.3;
     for (let b = 0; b < rapidCount; b++) beep(freq + 200, 0.12, rapidStart + b * 0.16);
@@ -545,14 +712,13 @@ function playBeep(urgency) {
 }
 
 function testSound() {
-  playBeep(2); // medium urgency test
+  playBeep(2);
 }
 
 /* ── Notification ── */
 function checkNotif() {
   const btn = document.getElementById('notifBtn');
   if (!NOTIF_SUPPORTED) {
-    // iOS Safari and some mobile browsers don't support Notification API
     btn.className = 'notif-bar unsupported';
     btn.textContent = '⚠️ 当前浏览器不支持系统通知';
     btn.onclick = null;
@@ -567,7 +733,6 @@ function checkNotif() {
     btn.textContent = '❌ 系统通知已被拒绝（请在浏览器设置中开启）';
     btn.onclick = null;
   } else {
-    // default / not yet requested
     btn.className = 'notif-bar pending';
     btn.textContent = '🔔 点击授权系统通知';
     btn.onclick = requestNotif;
@@ -579,14 +744,12 @@ function requestNotif() {
   Notification.requestPermission().then(permission => {
     checkNotif();
     if (permission === 'granted') {
-      // Test notification to confirm it works
       try {
         new Notification('✅ 授权成功', {
           body: '峰会议程计时器将在提醒节点推送通知',
           tag: 'summit-auth-test',
         });
       } catch(e) {
-        // Some browsers throw on new Notification even after granting
         console.warn('Notification test failed:', e);
       }
     }
