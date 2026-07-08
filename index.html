@@ -302,6 +302,8 @@ body {
 }
 .footer a:hover, .footer .qr-trigger:hover { color: var(--text); }
 
+.footer .stats { margin-left: 6px; }
+
 /* QR Code Modal */
 .qr-overlay {
   position: fixed; inset: 0; z-index: 600;
@@ -349,7 +351,10 @@ body {
 
 <div class="grid" id="grid"></div>
 
-<footer class="footer">Powered by <span class="qr-trigger" onclick="openQr()">Vikingzh</span></footer>
+<footer class="footer">
+  Powered by <span class="qr-trigger" onclick="openQr()">Vikingzh</span>
+  <span class="stats">· 浏览 <span id="busuanzi_value_page_pv">0</span> 次 · 访客 <span id="busuanzi_value_site_uv">0</span> 人</span>
+</footer>
 
 <div class="qr-overlay" id="qrOverlay" onclick="closeQr(event)">
   <div class="qr-card" onclick="event.stopPropagation()">
@@ -824,5 +829,6 @@ function closeQr(e) {
 /* ── Start ── */
 init();
 </script>
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 </body>
 </html>
