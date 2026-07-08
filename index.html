@@ -150,121 +150,148 @@ body {
 .node-label { flex: 1; }
 .node-clock { font-size: 11px; color: var(--text-light); font-variant-numeric: tabular-nums; }
 
-/* ── Popup Notification Panel ── */
-.popup-panel {
+/* ── Centered Popup Alert System ── */
+.popup-overlay {
   position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 300;
+  inset: 0;
+  z-index: 500;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-width: 340px;
-  width: calc(100vw - 32px);
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px;
   pointer-events: none;
-}
-@media (max-width: 800px) {
-  .popup-panel {
-    top: auto;
-    bottom: 16px;
-    right: 16px;
-    left: 16px;
-    max-width: none;
-    width: auto;
-  }
 }
 
 .popup-card {
   pointer-events: auto;
   background: #fff;
-  border-radius: 14px;
-  padding: 16px 18px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.18);
-  animation: popup-slide-in .35s ease-out;
+  border-radius: 20px;
+  padding: 24px 28px 20px;
+  box-shadow: 0 12px 48px rgba(0,0,0,.22), 0 0 0 2px rgba(0,0,0,.04);
+  animation: popup-burst .4s cubic-bezier(.2,.8,.3,1.2);
   position: relative;
   overflow: hidden;
-  border-left: 5px solid var(--border);
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
   transition: opacity .3s, transform .3s;
 }
 .popup-card.is-dismissing {
   opacity: 0;
-  transform: translateX(30px);
+  transform: scale(.9);
 }
 
-/* Urgency color bands */
-.popup-card[data-urgency="1"] { border-left-color: var(--green); }
-.popup-card[data-urgency="2"] { border-left-color: var(--amber); }
-.popup-card[data-urgency="3"] { border-left-color: var(--orange); }
-.popup-card[data-urgency="4"] { border-left-color: var(--red); }
-.popup-card[data-urgency="5"] { border-left-color: var(--dark-red); }
-.popup-card[data-urgency="6"] { border-left-color: var(--dark-red); }
-.popup-card[data-urgency="7"] { border-left-color: var(--dark-red); }
-.popup-card[data-urgency="8"] { border-left-color: var(--dark-red); }
+/* Countdown popups: colored top accent bar */
+.popup-card[data-urgency="1"] { border-top: 6px solid var(--green); }
+.popup-card[data-urgency="2"] { border-top: 6px solid var(--amber); }
+.popup-card[data-urgency="3"] { border-top: 6px solid var(--orange); }
+.popup-card[data-urgency="4"] { border-top: 6px solid var(--red); }
 
-@keyframes popup-slide-in {
-  from { transform: translateX(60px); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
+/* Overtime popups: full red background, pulsing */
+.popup-card[data-urgency="5"],
+.popup-card[data-urgency="6"],
+.popup-card[data-urgency="7"],
+.popup-card[data-urgency="8"] {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  animation: popup-burst .4s cubic-bezier(.2,.8,.3,1.2), overtime-pulse 1.5s infinite .4s;
+}
+@keyframes overtime-pulse {
+  0%,100% { box-shadow: 0 12px 48px rgba(220,38,38,.35); }
+  50%     { box-shadow: 0 12px 48px rgba(220,38,38,.6), 0 0 0 4px rgba(220,38,38,.3); }
+}
+
+@keyframes popup-burst {
+  from { transform: scale(.7); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
 }
 
 .popup-close {
   position: absolute;
-  top: 8px;
-  right: 10px;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: transparent;
+  top: 10px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.06);
   border: none;
   cursor: pointer;
-  font-size: 18px;
-  color: var(--text-light);
+  font-size: 22px;
+  color: var(--text-mid);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all .15s;
 }
-.popup-close:hover { background: #f1f5f9; color: var(--text); }
+.popup-close:hover { background: rgba(0,0,0,.12); color: var(--text); }
+/* Overtime popup close button */
+.popup-card[data-urgency="5"] .popup-close,
+.popup-card[data-urgency="6"] .popup-close,
+.popup-card[data-urgency="7"] .popup-close,
+.popup-card[data-urgency="8"] .popup-close {
+  background: rgba(255,255,255,.2);
+  color: #fff;
+}
+.popup-card[data-urgency="5"] .popup-close:hover,
+.popup-card[data-urgency="6"] .popup-close:hover,
+.popup-card[data-urgency="7"] .popup-close:hover,
+.popup-card[data-urgency="8"] .popup-close:hover {
+  background: rgba(255,255,255,.35);
+}
 
-.popup-icon { font-size: 28px; margin-bottom: 4px; }
-.popup-title { font-size: 16px; font-weight: 800; color: var(--text); }
-.popup-sub { font-size: 13px; color: var(--text-mid); margin-top: 4px; }
-
-/* Overtime popup: red background pulse */
-.popup-card[data-urgency="5"],
-.popup-card[data-urgency="6"],
-.popup-card[data-urgency="7"],
-.popup-card[data-urgency="8"] {
+.popup-icon { font-size: 48px; margin-bottom: 8px; }
+.popup-title { font-size: 22px; font-weight: 900; line-height: 1.3; }
+.popup-sub { font-size: 15px; color: var(--text-mid); margin-top: 8px; font-weight: 500; }
+.popup-action {
+  margin-top: 16px;
+  padding: 10px 28px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+}
+/* Countdown action button */
+.popup-card:not([data-urgency="5"]):not([data-urgency="6"]):not([data-urgency="7"]):not([data-urgency="8"]) .popup-action {
+  background: var(--text);
+  color: #fff;
+}
+.popup-card:not([data-urgency="5"]):not([data-urgency="6"]):not([data-urgency="7"]):not([data-urgency="8"]) .popup-action:hover {
+  background: #334155;
+}
+/* Overtime action button */
+.popup-card[data-urgency="5"] .popup-action,
+.popup-card[data-urgency="6"] .popup-action,
+.popup-card[data-urgency="7"] .popup-action,
+.popup-card[data-urgency="8"] .popup-action {
+  background: #fff;
+  color: #dc2626;
+}
+.popup-card[data-urgency="5"] .popup-action:hover,
+.popup-card[data-urgency="6"] .popup-action:hover,
+.popup-card[data-urgency="7"] .popup-action:hover,
+.popup-card[data-urgency="8"] .popup-action:hover {
   background: #fef2f2;
-  animation: popup-slide-in .35s ease-out, popup-pulse 2s infinite .35s;
-}
-@keyframes popup-pulse {
-  0%,100% { box-shadow: 0 8px 32px rgba(185,28,28,.2); }
-  50%     { box-shadow: 0 8px 32px rgba(185,28,28,.4); }
-}
-.popup-card[data-urgency="5"] .popup-title,
-.popup-card[data-urgency="6"] .popup-title,
-.popup-card[data-urgency="7"] .popup-title,
-.popup-card[data-urgency="8"] .popup-title {
-  color: var(--dark-red);
 }
 
-/* Auto-dismiss countdown bar */
-.popup-progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  background: var(--green);
-  border-radius: 0 0 0 14px;
-  transition: width linear;
-  width: 100%;
+/* Overtime popup text colors */
+.popup-card[data-urgency="5"] .popup-sub,
+.popup-card[data-urgency="6"] .popup-sub,
+.popup-card[data-urgency="7"] .popup-sub,
+.popup-card[data-urgency="8"] .popup-sub {
+  color: rgba(255,255,255,.85);
 }
-.popup-card[data-urgency="3"] .popup-progress { background: var(--orange); }
-.popup-card[data-urgency="4"] .popup-progress { background: var(--red); }
-.popup-card[data-urgency="5"] .popup-progress,
-.popup-card[data-urgency="6"] .popup-progress,
-.popup-card[data-urgency="7"] .popup-progress,
-.popup-card[data-urgency="8"] .popup-progress { background: var(--dark-red); }
+
+/* Urgency-specific countdown accent colors on sub text */
+.popup-card[data-urgency="1"] .popup-sub { color: #166534; }
+.popup-card[data-urgency="2"] .popup-sub { color: #92400e; }
+.popup-card[data-urgency="3"] .popup-sub { color: #c2410c; }
+.popup-card[data-urgency="4"] .popup-sub { color: #b91c1c; }
+.popup-card[data-urgency="4"] { border-top: 6px solid var(--dark-red); background: #fef2f2; }
 </style>
 </head>
 <body>
@@ -278,7 +305,7 @@ body {
 
 <div class="grid" id="grid"></div>
 
-<div class="popup-panel" id="popupPanel"></div>
+<div class="popup-overlay" id="popupPanel"></div>
 
 <script>
 /* ── Config ── */
@@ -291,18 +318,6 @@ const DUR_STEP = 5;   // 步进5分钟
 const DUR_MIN = 5;    // 最短5分钟
 const DUR_MAX = 180;  // 最长180分钟
 
-/* Auto-dismiss time per urgency level (ms). 0 = no auto-dismiss */
-const AUTO_DISMISS_MS = {
-  1: 6000,   // 半程 → 6s
-  2: 8000,   // 剩余15 → 8s
-  3: 10000,  // 剩余10 → 10s
-  4: 15000,  // 剩余5  → 15s
-  5: 0,      // 超时   → 手动关闭
-  6: 0,      // 超时5  → 手动关闭
-  7: 0,      // 超时10 → 手动关闭
-  8: 0,      // 超时15 → 手动关闭
-};
-
 /* ── Notification API availability ── */
 const NOTIF_SUPPORTED = typeof Notification !== 'undefined';
 
@@ -310,7 +325,7 @@ const NOTIF_SUPPORTED = typeof Notification !== 'undefined';
 let timers = [];
 let audioCtx = null;
 let popupIdCounter = 0;
-let activePopups = new Map(); // id → { el, autoTimer, progressTimer }
+let activePopups = new Map(); // id → { el }
 
 /* ── Reminder Nodes ── */
 function buildNodes(dur) {
@@ -609,55 +624,24 @@ function showPopup(agendaIdx, icon, title, sub, urgency) {
   card.dataset.urgency = urgency;
   card.dataset.agendaIdx = agendaIdx;
 
-  // Auto-dismiss config
-  const autoMs = AUTO_DISMISS_MS[urgency] || 0;
-
   card.innerHTML = `
-    <button class="popup-close" onclick="dismissPopup(${id})" title="关闭">✕</button>
+    <button class="popup-close" onclick="dismissPopup(${id})" title="关闭提醒">✕</button>
     <div class="popup-icon">${icon}</div>
     <div class="popup-title">${title}</div>
     <div class="popup-sub">${sub}</div>
-    ${autoMs > 0 ? `<div class="popup-progress" id="popupProg${id}"></div>` : ''}
+    <button class="popup-action" onclick="dismissPopup(${id})">知道了</button>
   `;
 
   panel.appendChild(card);
 
-  const entry = { el: card, autoTimer: null, progressTimer: null };
+  const entry = { el: card };
   activePopups.set(id, entry);
-
-  // Auto-dismiss countdown bar animation
-  if (autoMs > 0) {
-    const progEl = document.getElementById(`popupProg${id}`);
-    if (progEl) {
-      // Start with full width, shrink to 0 over autoMs
-      progEl.style.transition = `width ${autoMs}ms linear`;
-      // Force layout then trigger
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          progEl.style.width = '0%';
-        });
-      });
-    }
-    entry.autoTimer = setTimeout(() => {
-      dismissPopup(id);
-    }, autoMs);
-  }
-
-  // Limit max visible popups to 5 — dismiss oldest if overflow
-  const allPopupEls = panel.querySelectorAll('.popup-card:not(.is-dismissing)');
-  if (allPopupEls.length > 5) {
-    const oldest = allPopupEls[0];
-    const oldestId = parseInt(oldest.id.replace('popup', ''), 10);
-    dismissPopup(oldestId);
-  }
 }
 
 function dismissPopup(id) {
   const entry = activePopups.get(id);
   if (!entry) return;
-  clearTimeout(entry.autoTimer);
   entry.el.classList.add('is-dismissing');
-  // After animation, remove from DOM
   setTimeout(() => {
     if (entry.el.parentNode) entry.el.parentNode.removeChild(entry.el);
     activePopups.delete(id);
