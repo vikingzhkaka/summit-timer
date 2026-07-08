@@ -292,6 +292,15 @@ body {
 .popup-card[data-urgency="3"] .popup-sub { color: #c2410c; }
 .popup-card[data-urgency="4"] .popup-sub { color: #b91c1c; }
 .popup-card[data-urgency="4"] { border-top: 6px solid var(--dark-red); background: #fef2f2; }
+.footer {
+  text-align: center; padding: 18px 0 10px; margin-top: 20px;
+  font-size: 12px; color: var(--text-light); letter-spacing: .3px;
+}
+.footer a {
+  color: var(--text-mid); text-decoration: none; font-weight: 600;
+  transition: color .2s;
+}
+.footer a:hover { color: var(--text); }
 </style>
 </head>
 <body>
@@ -304,6 +313,8 @@ body {
 </div>
 
 <div class="grid" id="grid"></div>
+
+<footer class="footer">Powered by <a href="https://github.com/vikingzhkaka/summit-timer" target="_blank">Vikingzh</a></footer>
 
 <div class="popup-overlay" id="popupPanel"></div>
 
