@@ -296,11 +296,46 @@ body {
   text-align: center; padding: 18px 0 10px; margin-top: 20px;
   font-size: 12px; color: var(--text-light); letter-spacing: .3px;
 }
-.footer a {
+.footer a, .footer .qr-trigger {
   color: var(--text-mid); text-decoration: none; font-weight: 600;
-  transition: color .2s;
+  transition: color .2s; cursor: pointer;
 }
-.footer a:hover { color: var(--text); }
+.footer a:hover, .footer .qr-trigger:hover { color: var(--text); }
+
+/* QR Code Modal */
+.qr-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(15, 23, 42, .55);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px; backdrop-filter: blur(4px);
+}
+.qr-overlay.is-open { display: flex; }
+.qr-card {
+  background: #fff; border-radius: 20px;
+  padding: 24px 28px 20px; max-width: 360px; width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  text-align: center; animation: qr-pop .35s cubic-bezier(.2,.8,.3,1.2);
+  position: relative;
+}
+@keyframes qr-pop {
+  from { transform: scale(.85); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+.qr-close {
+  position: absolute; top: 10px; right: 12px;
+  width: 34px; height: 34px; border-radius: 10px;
+  background: #f1f5f9; border: none; cursor: pointer;
+  font-size: 20px; color: var(--text-mid);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.qr-close:hover { background: #e2e8f0; color: var(--text); }
+.qr-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.qr-sub { font-size: 13px; color: var(--text-light); margin-bottom: 16px; }
+.qr-img {
+  width: 100%; max-width: 260px; border-radius: 14px;
+  border: 1px solid var(--border); display: block; margin: 0 auto;
+}
 </style>
 </head>
 <body>
@@ -314,7 +349,16 @@ body {
 
 <div class="grid" id="grid"></div>
 
-<footer class="footer">Powered by <a href="https://github.com/vikingzhkaka/summit-timer" target="_blank">Vikingzh</a></footer>
+<footer class="footer">Powered by <span class="qr-trigger" onclick="openQr()">Vikingzh</span></footer>
+
+<div class="qr-overlay" id="qrOverlay" onclick="closeQr(event)">
+  <div class="qr-card" onclick="event.stopPropagation()">
+    <button class="qr-close" onclick="closeQr()" title="关闭">✕</button>
+    <div class="qr-title">联系 Viking</div>
+    <div class="qr-sub">扫码添加微信好友</div>
+    <img src="qr-code.jpg" alt="Viking 微信二维码" class="qr-img">
+  </div>
+</div>
 
 <div class="popup-overlay" id="popupPanel"></div>
 
@@ -766,6 +810,15 @@ function pushNotif(agendaName, nodeLabel, urgency) {
   } catch(e) {
     console.warn('Push notification failed:', e);
   }
+}
+
+/* ── QR Modal ── */
+function openQr() {
+  document.getElementById('qrOverlay').classList.add('is-open');
+}
+function closeQr(e) {
+  if (e && e.target !== document.getElementById('qrOverlay')) return;
+  document.getElementById('qrOverlay').classList.remove('is-open');
 }
 
 /* ── Start ── */
