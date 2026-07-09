@@ -265,7 +265,13 @@ main {
 
 /* Node section (header always visible, list collapsible) */
 .nodes-section {
-  border-top: 1px solid var(--border); background: var(--bg);
+  border-top: 1px solid transparent;
+  background: transparent;
+  transition: background .2s, border-color .2s;
+}
+.nodes-section.open {
+  border-top-color: var(--border);
+  background: var(--bg);
 }
 .nodes-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -558,7 +564,7 @@ function renderSetup(card, t, i) {
         <button class="btn btn-secondary" onclick="resetTimer(${i})" title="重置">↺</button>
       </div>
     </div>
-    <div class="nodes-section">
+    <div class="nodes-section ${t.nodesOpen ? 'open' : ''}">
       <div class="nodes-header" onclick="toggleNodes(${i})">
         <span class="nodes-toggle ${t.nodesOpen ? 'open' : ''}"><span class="nodes-toggle-icon">📋</span> 提醒节点</span>
         <span class="nodes-hint">${t.nodesOpen ? '点击收起 ↑' : '点击展开 ↓'}</span>
@@ -593,7 +599,7 @@ function renderLive(card, t, i) {
         <button class="btn btn-secondary" onclick="resetTimer(${i})" title="重置">↺</button>
       </div>
     </div>
-    <div class="nodes-section">
+    <div class="nodes-section ${t.nodesOpen ? 'open' : ''}">
       <div class="nodes-header" onclick="toggleNodes(${i})">
         <span class="nodes-toggle ${t.nodesOpen ? 'open' : ''}"><span class="nodes-toggle-icon">📋</span> 提醒节点</span>
         <span class="nodes-hint">${t.nodesOpen ? '点击收起 ↑' : '点击展开 ↓'}</span>
@@ -628,18 +634,22 @@ function getElapsed(t) {
   return t.pausedSec + (t.state === 'paused' ? 0 : (Date.now() - t.startTs) / 1000);
 }
 
-function toggleNodes(i) {
-  const t = timers[i]; t.nodesOpen = !t.nodesOpen;
+function setNodesOpen(i, open) {
+  const t = timers[i]; if (t.nodesOpen === open) return;
+  t.nodesOpen = open;
   const panel = document.getElementById(`nPanel${i}`);
-  if (panel) panel.classList.toggle('open', t.nodesOpen);
-  // Update hint text and icon rotation
+  if (panel) panel.classList.toggle('open', open);
   const section = panel && panel.closest('.nodes-section');
   if (section) {
+    section.classList.toggle('open', open);
     const toggle = section.querySelector('.nodes-toggle');
     const hint = section.querySelector('.nodes-hint');
-    if (toggle) toggle.classList.toggle('open', t.nodesOpen);
-    if (hint) hint.textContent = t.nodesOpen ? '点击收起 ↑' : '点击展开 ↓';
+    if (toggle) toggle.classList.toggle('open', open);
+    if (hint) hint.textContent = open ? '点击收起 ↑' : '点击展开 ↓';
   }
+}
+function toggleNodes(i) {
+  const t = timers[i]; setNodesOpen(i, !t.nodesOpen);
 }
 
 function stepDur(i, delta) {
@@ -716,8 +726,9 @@ function tick(i) {
   t.nodes.forEach((nd, ni) => {
     const row = document.getElementById(`nd${i}_${ni}`); if (!row) return;
     if (t.hitNodes.has(nd.label)) { row.className = 'node-row ' + (nd.overtime ? 'hit-overtime' : 'hit'); }
-    else if (totalSec >= nd.eMin * 60) {
+    else     if (totalSec >= nd.eMin * 60) {
       t.hitNodes.add(nd.label); row.className = 'node-row ' + (nd.overtime ? 'hit-overtime' : 'hit');
+      if (!t.nodesOpen) setNodesOpen(i, true);
       if (!nd.silent) triggerAlert(i, nd);
     } else { row.className = totalSec + 60 > nd.eMin * 60 ? 'node-row next' : 'node-row'; }
   });
