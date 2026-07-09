@@ -445,6 +445,12 @@ footer .clear-store:hover { color: var(--red-dark); }
 .share-actions { display: flex; gap: 10px; margin-top: 12px; }
 .share-actions .btn { flex: 1; height: 44px; font-size: 14px; }
 .share-note { font-size: 11px; color: var(--text-light); margin-top: 12px; line-height: 1.5; }
+.share-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 12px; color: var(--text-light); font-size: 12px; font-weight: 700; }
+.share-divider::before, .share-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.settings-list { display: flex; flex-direction: column; gap: 10px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.settings-label { font-size: 14px; font-weight: 600; color: var(--text-mid); }
+.share-card .icon-btn { height: 38px; min-width: auto; padding: 0 12px; }
 </style>
 </head>
 <body>
@@ -465,8 +471,7 @@ footer .clear-store:hover { color: var(--red-dark); }
     <div class="header-actions">
       <button class="icon-btn" onclick="openGuide()" title="使用说明" aria-label="使用说明"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> 说明</button>
       <button class="icon-btn" onclick="shareConfig()" title="分享配置到手机" aria-label="分享配置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> 配置</button>
-      <button class="icon-btn" id="notifBtn" title="系统通知" aria-label="系统通知"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> 通知</button>
-      <button class="icon-btn" onclick="testSound()" title="测试提醒音" aria-label="测试提醒音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> 测试</button>
+      <button class="icon-btn" onclick="clearStore()" title="清空本地存档" aria-label="清空本地存档"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> 清空</button>
     </div>
   </div>
 </header>
@@ -492,7 +497,7 @@ footer .clear-store:hover { color: var(--red-dark); }
 
 <footer>
   Powered by <span class="qr-trigger" onclick="openQr()">Vikingzh</span>
-  <span class="stats">· <a class="stats-link" href="https://analytics.umami.is" target="_blank" rel="noopener" title="在 Umami 后台查看可查的访问数据">📊 访问统计</a> · <span class="clear-store" onclick="clearStore()" title="清空本地存档（名称/时长/计时），恢复默认">清空存档</span></span>
+  <span class="stats">· <a class="stats-link" href="https://analytics.umami.is" target="_blank" rel="noopener" title="在 Umami 后台查看可查的访问数据">📊 访问统计</a></span>
 </footer>
 <div id="srAlert" class="sr-only" aria-live="assertive" role="alert"></div>
 
@@ -508,7 +513,7 @@ footer .clear-store:hover { color: var(--red-dark); }
 <div class="share-overlay" id="shareOverlay" onclick="closeShare(event)">
   <div class="share-card" onclick="event.stopPropagation()">
     <button class="qr-close" onclick="closeShare()">✕</button>
-    <div class="share-title">📤 分享配置</div>
+    <div class="share-title">⚙️ 配置</div>
     <div class="share-sub">手机扫码或打开链接，自动载入当前议程设置</div>
     <img id="shareQr" class="share-qr" alt="配置二维码" onerror="this.style.display='none';var n=document.getElementById('shareErr');if(n)n.style.display='block';">
     <input id="shareLink" class="share-link" readonly>
@@ -518,6 +523,17 @@ footer .clear-store:hover { color: var(--red-dark); }
     </div>
     <div class="share-note" id="shareErr" style="display:none;color:var(--amber-dark);">二维码图片加载失败（可能网络受限），请用「复制链接」把地址发到手机微信打开。</div>
     <div class="share-note">链接含议程名称、时长及当前计时状态，手机打开可接着计时。二维码由公开服务生成，介意可只用「复制链接」。</div>
+    <div class="share-divider"><span>设置</span></div>
+    <div class="settings-list">
+      <div class="settings-row">
+        <span class="settings-label">🔊 提示音</span>
+        <button class="btn btn-secondary" onclick="testSound()">测试</button>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">🔔 系统通知</span>
+        <button class="icon-btn" id="notifBtn" title="系统通知" aria-label="系统通知"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> 通知</button>
+      </div>
+    </div>
   </div>
 </div>
 
