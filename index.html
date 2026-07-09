@@ -520,7 +520,7 @@ function init() {
   timers = CONFIGS.map(c => ({
     name: c.name, dur: c.duration, defaultDur: c.duration,
     state: 'idle', startTs: null, pausedSec: 0, intervalId: null,
-    hitNodes: new Set(), nodes: buildNodes(c.duration), nodesOpen: true,
+    hitNodes: new Set(), nodes: buildNodes(c.duration), nodesOpen: false,
   }));
   renderCards(); checkNotif();
 }
