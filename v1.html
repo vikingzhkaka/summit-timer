@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>峰会议程计时器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --green: #22c55e; --amber: #eab308; --orange: #f97316; --red: #ef4444; --dark-red: #b91c1c;
+  --bg: #f1f5f9; --card-bg: #ffffff; --text: #0f172a; --text-mid: #475569; --text-light: #94a3b8;
+  --border: #e2e8f0; --border-focus: #cbd5e1;
+  --radius: 14px;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; padding: 16px;
+}
+.header { text-align: center; padding: 24px 0 8px; }
+.header h1 { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+.header .sub { color: var(--text-light); font-size: 13px; margin-top: 6px; }
+.notif-bar {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 10px; padding: 7px 14px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
+}
+.notif-bar.pending { background: #fef3c7; color: #92400e; }
+.notif-bar.granted { background: #dcfce7; color: #166534; cursor: default; }
+.notif-bar.unsupported { background: #fee2e2; color: #991b1b; cursor: default; }
+.notif-bar.denied { background: #f3f4f6; color: #6b7280; cursor: default; }
+.sound-test {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: 8px; padding: 7px 12px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; background: #e0e7ff; color: #3730a3;
+  cursor: pointer; transition: all .2s;
+}
+.sound-test:hover { background: #c7d2fe; }
+
+.grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 14px; margin-top: 18px; max-width: 1100px; margin-inline: auto;
+}
+@media (max-width: 800px) { .grid { grid-template-columns: 1fr; gap: 10px; } }
+
+.card {
+  background: var(--card-bg); border-radius: var(--radius);
+  padding: 20px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  border: 2.5px solid var(--border); transition: border-color .3s, box-shadow .3s;
+  position: relative;
+}
+.card[data-state="green"]  { border-color: var(--green); }
+.card[data-state="amber"]  { border-color: var(--amber); box-shadow: 0 2px 8px rgba(234,179,8,.15); }
+.card[data-state="orange"] { border-color: var(--orange); box-shadow: 0 2px 8px rgba(249,115,22,.18); }
+.card[data-state="red"]    { border-color: var(--red); box-shadow: 0 2px 12px rgba(239,68,68,.22); }
+.card[data-state="overtime"] {
+  border-color: var(--dark-red);
+  animation: pulse-border 1.2s infinite;
+}
+@keyframes pulse-border {
+  0%,100% { border-color: var(--dark-red); box-shadow: 0 2px 12px rgba(185,28,28,.25); }
+  50% { border-color: #7f1d1d; box-shadow: 0 2px 24px rgba(185,28,28,.45); }
+}
+
+.card-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.card-name {
+  font-size: 17px; font-weight: 700; color: var(--text);
+  border: none; background: transparent; outline: none; width: 110px;
+  padding: 2px 0;
+}
+.card-name:focus { border-bottom: 2px solid var(--green); }
+
+/* Duration stepper */
+.dur-stepper {
+  display: inline-flex; align-items: center; gap: 0;
+  font-size: 13px; font-weight: 600;
+}
+.dur-stepper-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--bg); color: var(--text-mid);
+  border: 1px solid var(--border); cursor: pointer;
+  font-size: 16px; font-weight: 800; display: flex;
+  align-items: center; justify-content: center;
+  transition: all .15s; user-select: none;
+}
+.dur-stepper-btn:hover:not(:disabled) { background: var(--border); }
+.dur-stepper-btn:disabled { opacity: .4; cursor: not-allowed; }
+.dur-stepper-val {
+  min-width: 52px; text-align: center; padding: 4px 2px;
+  font-variant-numeric: tabular-nums; color: var(--text);
+  font-size: 14px; font-weight: 700;
+}
+.dur-stepper-unit { font-size: 12px; color: var(--text-light); margin-left: 2px; }
+
+.timer-area { text-align: center; margin: 16px 0 8px; }
+.remain {
+  font-size: 44px; font-weight: 800; letter-spacing: -2px;
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.remain.overtime-text { color: var(--dark-red); }
+.remain-label { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+.elapsed-info { font-size: 13px; color: var(--text-light); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+.prog-bar {
+  height: 5px; background: var(--border); border-radius: 3px;
+  margin: 12px 0; overflow: hidden;
+}
+.prog-fill {
+  height: 100%; border-radius: 3px; transition: width .8s linear, background .3s;
+  width: 0%; background: var(--green);
+}
+
+.ctrls { display: flex; gap: 7px; margin: 12px 0; }
+.btn {
+  padding: 9px 0; border-radius: 10px; font-size: 14px; font-weight: 700;
+  border: none; cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.btn-start {
+  background: var(--green); color: #fff; flex: 1;
+}
+.btn-start:hover { background: #16a34a; }
+.btn-start.is-paused { background: var(--amber); }
+.btn-start.is-paused:hover { background: #ca8a04; }
+.btn-start.is-running { background: var(--amber); }
+.btn-start.is-running:hover { background: #ca8a04; }
+.btn-reset {
+  background: var(--bg); color: var(--text-mid); border: 1px solid var(--border); width: 52px;
+}
+.btn-reset:hover { background: var(--border); }
+
+.nodes-title {
+  font-size: 11px; color: var(--text-light); font-weight: 700;
+  letter-spacing: .5px; margin-top: 14px; margin-bottom: 6px; text-transform: uppercase;
+}
+.node-row {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 0; font-size: 13px; color: var(--text-light);
+  transition: color .2s;
+}
+.node-row.is-next { color: var(--text); font-weight: 600; }
+.node-row.is-hit  { color: var(--green); font-weight: 600; }
+.node-row.is-hit-overtime { color: var(--dark-red); font-weight: 700; }
+.node-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--border); transition: background .2s;
+}
+.node-row.is-next .node-dot { background: var(--amber); }
+.node-row.is-hit  .node-dot { background: var(--green); }
+.node-row.is-hit-overtime .node-dot { background: var(--dark-red); }
+.node-label { flex: 1; }
+.node-clock { font-size: 11px; color: var(--text-light); font-variant-numeric: tabular-nums; }
+
+/* ── Centered Popup Alert System ── */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px;
+  pointer-events: none;
+}
+
+.popup-card {
+  pointer-events: auto;
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px 28px 20px;
+  box-shadow: 0 12px 48px rgba(0,0,0,.22), 0 0 0 2px rgba(0,0,0,.04);
+  animation: popup-burst .4s cubic-bezier(.2,.8,.3,1.2);
+  position: relative;
+  overflow: hidden;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  transition: opacity .3s, transform .3s;
+}
+.popup-card.is-dismissing {
+  opacity: 0;
+  transform: scale(.9);
+}
+
+/* Countdown popups: colored top accent bar */
+.popup-card[data-urgency="1"] { border-top: 6px solid var(--green); }
+.popup-card[data-urgency="2"] { border-top: 6px solid var(--amber); }
+.popup-card[data-urgency="3"] { border-top: 6px solid var(--orange); }
+.popup-card[data-urgency="4"] { border-top: 6px solid var(--red); }
+
+/* Overtime popups: full red background, pulsing */
+.popup-card[data-urgency="5"],
+.popup-card[data-urgency="6"],
+.popup-card[data-urgency="7"],
+.popup-card[data-urgency="8"] {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  animation: popup-burst .4s cubic-bezier(.2,.8,.3,1.2), overtime-pulse 1.5s infinite .4s;
+}
+@keyframes overtime-pulse {
+  0%,100% { box-shadow: 0 12px 48px rgba(220,38,38,.35); }
+  50%     { box-shadow: 0 12px 48px rgba(220,38,38,.6), 0 0 0 4px rgba(220,38,38,.3); }
+}
+
+@keyframes popup-burst {
+  from { transform: scale(.7); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+
+.popup-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.06);
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  color: var(--text-mid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.popup-close:hover { background: rgba(0,0,0,.12); color: var(--text); }
+/* Overtime popup close button */
+.popup-card[data-urgency="5"] .popup-close,
+.popup-card[data-urgency="6"] .popup-close,
+.popup-card[data-urgency="7"] .popup-close,
+.popup-card[data-urgency="8"] .popup-close {
+  background: rgba(255,255,255,.2);
+  color: #fff;
+}
+.popup-card[data-urgency="5"] .popup-close:hover,
+.popup-card[data-urgency="6"] .popup-close:hover,
+.popup-card[data-urgency="7"] .popup-close:hover,
+.popup-card[data-urgency="8"] .popup-close:hover {
+  background: rgba(255,255,255,.35);
+}
+
+.popup-icon { font-size: 48px; margin-bottom: 8px; }
+.popup-title { font-size: 22px; font-weight: 900; line-height: 1.3; }
+.popup-sub { font-size: 15px; color: var(--text-mid); margin-top: 8px; font-weight: 500; }
+.popup-action {
+  margin-top: 16px;
+  padding: 10px 28px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+}
+/* Countdown action button */
+.popup-card:not([data-urgency="5"]):not([data-urgency="6"]):not([data-urgency="7"]):not([data-urgency="8"]) .popup-action {
+  background: var(--text);
+  color: #fff;
+}
+.popup-card:not([data-urgency="5"]):not([data-urgency="6"]):not([data-urgency="7"]):not([data-urgency="8"]) .popup-action:hover {
+  background: #334155;
+}
+/* Overtime action button */
+.popup-card[data-urgency="5"] .popup-action,
+.popup-card[data-urgency="6"] .popup-action,
+.popup-card[data-urgency="7"] .popup-action,
+.popup-card[data-urgency="8"] .popup-action {
+  background: #fff;
+  color: #dc2626;
+}
+.popup-card[data-urgency="5"] .popup-action:hover,
+.popup-card[data-urgency="6"] .popup-action:hover,
+.popup-card[data-urgency="7"] .popup-action:hover,
+.popup-card[data-urgency="8"] .popup-action:hover {
+  background: #fef2f2;
+}
+
+/* Overtime popup text colors */
+.popup-card[data-urgency="5"] .popup-sub,
+.popup-card[data-urgency="6"] .popup-sub,
+.popup-card[data-urgency="7"] .popup-sub,
+.popup-card[data-urgency="8"] .popup-sub {
+  color: rgba(255,255,255,.85);
+}
+
+/* Urgency-specific countdown accent colors on sub text */
+.popup-card[data-urgency="1"] .popup-sub { color: #166534; }
+.popup-card[data-urgency="2"] .popup-sub { color: #92400e; }
+.popup-card[data-urgency="3"] .popup-sub { color: #c2410c; }
+.popup-card[data-urgency="4"] .popup-sub { color: #b91c1c; }
+.popup-card[data-urgency="4"] { border-top: 6px solid var(--dark-red); background: #fef2f2; }
+.footer {
+  text-align: center; padding: 18px 0 10px; margin-top: 20px;
+  font-size: 12px; color: var(--text-light); letter-spacing: .3px;
+}
+.footer a, .footer .qr-trigger {
+  color: var(--text-mid); text-decoration: none; font-weight: 600;
+  transition: color .2s; cursor: pointer;
+}
+.footer a:hover, .footer .qr-trigger:hover { color: var(--text); }
+
+.footer .stats { margin-left: 6px; }
+
+/* QR Code Modal */
+.qr-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(15, 23, 42, .55);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px; backdrop-filter: blur(4px);
+}
+.qr-overlay.is-open { display: flex; }
+.qr-card {
+  background: #fff; border-radius: 20px;
+  padding: 24px 28px 20px; max-width: 360px; width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  text-align: center; animation: qr-pop .35s cubic-bezier(.2,.8,.3,1.2);
+  position: relative;
+}
+@keyframes qr-pop {
+  from { transform: scale(.85); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+.qr-close {
+  position: absolute; top: 10px; right: 12px;
+  width: 34px; height: 34px; border-radius: 10px;
+  background: #f1f5f9; border: none; cursor: pointer;
+  font-size: 20px; color: var(--text-mid);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.qr-close:hover { background: #e2e8f0; color: var(--text); }
+.qr-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.qr-sub { font-size: 13px; color: var(--text-light); margin-bottom: 16px; }
+.qr-img {
+  width: 100%; max-width: 260px; border-radius: 14px;
+  border: 1px solid var(--border); display: block; margin: 0 auto;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⏱ 峰会议程计时器</h1>
+  <p class="sub">点击「开始」启动计时 · 系统自动在节点推送提醒 · 时长可在计时前调整</p>
+  <span class="notif-bar pending" id="notifBtn">🔔 点击授权系统通知</span>
+  <span class="sound-test" onclick="testSound()">🔊 测试提醒音</span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<footer class="footer">
+  Powered by <span class="qr-trigger" onclick="openQr()">Vikingzh</span>
+  <span class="stats">· 浏览 <span id="busuanzi_value_page_pv">0</span> 次 · 访客 <span id="busuanzi_value_site_uv">0</span> 人</span>
+</footer>
+
+<div class="qr-overlay" id="qrOverlay" onclick="closeQr(event)">
+  <div class="qr-card" onclick="event.stopPropagation()">
+    <button class="qr-close" onclick="closeQr()" title="关闭">✕</button>
+    <div class="qr-title">联系 Viking</div>
+    <div class="qr-sub">扫码添加微信好友</div>
+    <img src="qr-code.jpg" alt="Viking 微信二维码" class="qr-img">
+  </div>
+</div>
+
+<div class="popup-overlay" id="popupPanel"></div>
+
+<script>
+/* ── Config ── */
+const CONFIGS = [
+  { name: '议程一', duration: 15 },
+  { name: '议程二', duration: 60 },
+  { name: '议程三', duration: 60 },
+];
+const DUR_STEP = 5;   // 步进5分钟
+const DUR_MIN = 5;    // 最短5分钟
+const DUR_MAX = 180;  // 最长180分钟
+
+/* ── Notification API availability ── */
+const NOTIF_SUPPORTED = typeof Notification !== 'undefined';
+
+/* ── State ── */
+let timers = [];
+let audioCtx = null;
+let popupIdCounter = 0;
+let activePopups = new Map(); // id → { el }
+
+/* ── Reminder Nodes ── */
+function buildNodes(dur) {
+  const n = [];
+  // Countdown nodes
+  if (dur >= 30) n.push({ eMin: 30, label: '半程提醒', icon: '⏳', urgency: 1 });
+  else if (dur >= 10) n.push({ eMin: Math.floor(dur / 2), label: '半程提醒', icon: '⏳', urgency: 1 });
+  const r15 = dur - 15;
+  if (r15 > 0)       n.push({ eMin: r15, label: '剩余15分钟', icon: '⚠️', urgency: 2 });
+  else if (r15 === 0) n.push({ eMin: 0,   label: '总时长15分钟', icon: 'ℹ️', urgency: 0, silent: true });
+  const r10 = dur - 10;
+  if (r10 > 0) n.push({ eMin: r10, label: '剩余10分钟', icon: '🔶', urgency: 3 });
+  const r5 = dur - 5;
+  if (r5 > 0) n.push({ eMin: r5, label: '剩余5分钟', icon: '🔴', urgency: 4 });
+  // Overtime nodes
+  n.push({ eMin: dur,       label: '已超时',       icon: '🚨', urgency: 5, overtime: true });
+  n.push({ eMin: dur + 5,   label: '超时5分钟',   icon: '🚨', urgency: 6, overtime: true });
+  n.push({ eMin: dur + 10,  label: '超时10分钟',  icon: '🚨', urgency: 7, overtime: true });
+  n.push({ eMin: dur + 15,  label: '超时15分钟',  icon: '🚨', urgency: 8, overtime: true });
+  // Deduplicate nodes at same eMin (keep higher urgency)
+  const map = new Map();
+  n.forEach(nd => {
+    const existing = map.get(nd.eMin);
+    if (!existing || nd.urgency > existing.urgency) map.set(nd.eMin, nd);
+  });
+  return Array.from(map.values()).sort((a, b) => a.eMin - b.eMin);
+}
+
+/* ── Init ── */
+function init() {
+  timers = CONFIGS.map(c => ({
+    name: c.name, dur: c.duration, defaultDur: c.duration,
+    state: 'idle', startTs: null, pausedSec: 0,
+    intervalId: null, hitNodes: new Set(),
+    nodes: buildNodes(c.duration),
+  }));
+  renderCards();
+  checkNotif();
+}
+
+/* ── Render Cards ── */
+function renderCards() {
+  const g = document.getElementById('grid');
+  g.innerHTML = '';
+  timers.forEach((t, i) => {
+    const card = document.createElement('div');
+    card.className = 'card'; card.id = `card${i}`;
+    card.dataset.state = 'idle';
+
+    const nodesHtml = t.nodes.map((nd, ni) =>
+      `<div class="node-row" id="nd${i}_${ni}">
+        <span class="node-dot"></span>
+        <span class="node-label">${nd.icon} ${nd.label}</span>
+        <span class="node-clock" id="ndClk${i}_${ni}">--:--</span>
+      </div>`
+    ).join('');
+
+    const isIdle = t.state === 'idle';
+
+    card.innerHTML = `
+      <div class="card-top">
+        <input class="card-name" value="${t.name}" onchange="timers[${i}].name=this.value" />
+        <span class="dur-stepper">
+          <button class="dur-stepper-btn" id="durD${i}" onclick="stepDur(${i},-1)" ${isIdle?'':'disabled'}>−</button>
+          <span class="dur-stepper-val" id="durV${i}">${t.dur}</span>
+          <button class="dur-stepper-btn" id="durU${i}" onclick="stepDur(${i},1)" ${isIdle?'':'disabled'}>＋</button>
+          <span class="dur-stepper-unit">min</span>
+        </span>
+      </div>
+      <div class="timer-area">
+        <div class="remain" id="rem${i}">${fmtTime(t.dur * 60)}</div>
+        <div class="remain-label" id="remLbl${i}">尚未开始</div>
+        <div class="elapsed-info" id="elInfo${i}"></div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="prog${i}"></div></div>
+      <div class="ctrls">
+        <button class="btn btn-start" id="btnS${i}" onclick="toggleStart(${i})">▶ 开始</button>
+        <button class="btn btn-reset" onclick="resetTimer(${i})">↺</button>
+      </div>
+      <div class="nodes-title">提醒节点</div>
+      ${nodesHtml}
+    `;
+    g.appendChild(card);
+  });
+}
+
+/* ── Duration Adjustment ── */
+function stepDur(i, delta) {
+  const t = timers[i];
+  if (t.state !== 'idle') return;
+  const newVal = Math.max(DUR_MIN, Math.min(DUR_MAX, t.dur + delta * DUR_STEP));
+  if (newVal === t.dur) return;
+  t.dur = newVal;
+  t.nodes = buildNodes(newVal);
+  t.hitNodes = new Set();
+  document.getElementById(`durV${i}`).textContent = newVal;
+  document.getElementById(`rem${i}`).textContent = fmtTime(newVal * 60);
+  // Re-render nodes
+  rerenderNodes(i);
+  document.getElementById(`durD${i}`).disabled = (newVal <= DUR_MIN);
+  document.getElementById(`durU${i}`).disabled = (newVal >= DUR_MAX);
+}
+
+function rerenderNodes(i) {
+  const t = timers[i];
+  const card = document.getElementById(`card${i}`);
+  const oldNodes = card.querySelectorAll('.node-row');
+  oldNodes.forEach(el => el.remove());
+  t.nodes.forEach((nd, ni) => {
+    const row = document.createElement('div');
+    row.className = 'node-row'; row.id = `nd${i}_${ni}`;
+    row.innerHTML = `<span class="node-dot"></span><span class="node-label">${nd.icon} ${nd.label}</span><span class="node-clock" id="ndClk${i}_${ni}">--:--</span>`;
+    card.appendChild(row);
+  });
+}
+
+/* ── Format ── */
+function fmtTime(sec) {
+  const abs = Math.abs(Math.floor(sec));
+  const m = Math.floor(abs / 60), s = abs % 60;
+  const prefix = sec < 0 ? '+' : '';
+  return `${prefix}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function fmtClock(ts) {
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+/* ── Controls ── */
+function toggleStart(i) {
+  const t = timers[i];
+  if (t.state === 'idle') {
+    t.startTs = Date.now(); t.pausedSec = 0; t.hitNodes = new Set();
+    t.state = 'running';
+    t.intervalId = setInterval(() => tick(i), 1000);
+    // Lock duration stepper
+    document.getElementById(`durD${i}`).disabled = true;
+    document.getElementById(`durU${i}`).disabled = true;
+    // Mark silent nodes at t=0
+    t.nodes.forEach(nd => { if (nd.eMin === 0) t.hitNodes.add(nd.label); });
+    // Set node timestamps
+    t.nodes.forEach((nd, ni) => {
+      const ts = t.startTs + nd.eMin * 60000;
+      document.getElementById(`ndClk${i}_${ni}`).textContent = fmtClock(ts);
+    });
+  } else if (t.state === 'running') {
+    clearInterval(t.intervalId);
+    t.pausedSec += (Date.now() - t.startTs) / 1000;
+    t.state = 'paused';
+  } else if (t.state === 'paused') {
+    t.startTs = Date.now();
+    t.state = 'running';
+    t.intervalId = setInterval(() => tick(i), 1000);
+  } else if (t.state === 'overtime') {
+    // overtime → pause
+    clearInterval(t.intervalId);
+    t.pausedSec += (Date.now() - t.startTs) / 1000;
+    t.state = 'paused';
+  }
+  updateBtn(i); tick(i);
+}
+
+function resetTimer(i) {
+  const t = timers[i];
+  clearInterval(t.intervalId);
+  t.state = 'idle'; t.startTs = null; t.pausedSec = 0;
+  t.hitNodes = new Set();
+  // Restore default duration
+  t.dur = t.defaultDur;
+  t.nodes = buildNodes(t.dur);
+  const card = document.getElementById(`card${i}`);
+  card.dataset.state = 'idle';
+  document.getElementById(`rem${i}`).textContent = fmtTime(t.dur * 60);
+  document.getElementById(`rem${i}`).className = 'remain';
+  document.getElementById(`remLbl${i}`).textContent = '尚未开始';
+  document.getElementById(`elInfo${i}`).textContent = '';
+  document.getElementById(`prog${i}`).style.width = '0%';
+  document.getElementById(`prog${i}`).style.background = 'var(--green)';
+  document.getElementById(`durV${i}`).textContent = t.dur;
+  document.getElementById(`durD${i}`).disabled = (t.dur <= DUR_MIN);
+  document.getElementById(`durU${i}`).disabled = (t.dur >= DUR_MAX);
+  rerenderNodes(i);
+  updateBtn(i);
+  updateTitle();
+  // Also dismiss all popups for this agenda
+  dismissPopupsForAgenda(i);
+}
+
+function updateBtn(i) {
+  const btn = document.getElementById(`btnS${i}`);
+  const t = timers[i];
+  btn.className = 'btn btn-start';
+  if (t.state === 'idle') { btn.textContent = '▶ 开始'; }
+  else if (t.state === 'running' || t.state === 'overtime') {
+    btn.textContent = '⏸ 暂停'; btn.classList.add('is-running');
+  }
+  else if (t.state === 'paused') { btn.textContent = '▶ 继续'; btn.classList.add('is-paused'); }
+}
+
+/* ── Tick ── */
+function tick(i) {
+  const t = timers[i];
+  if (t.state === 'idle') return;
+  const totalSec = t.pausedSec + (t.state === 'paused' ? 0 : (Date.now() - t.startTs) / 1000);
+  const remainSec = t.dur * 60 - totalSec;
+
+  // Display
+  const remEl = document.getElementById(`rem${i}`);
+  remEl.textContent = fmtTime(remainSec);
+  remEl.className = 'remain' + (remainSec <= 0 ? ' overtime-text' : '');
+  document.getElementById(`remLbl${i}`).textContent = remainSec > 0 ? '剩余时间' : '已超时';
+  document.getElementById(`elInfo${i}`).textContent = `已进行 ${fmtTime(totalSec)}`;
+
+  // Progress bar
+  const pct = Math.min(100, (totalSec / (t.dur * 60)) * 100);
+  const progEl = document.getElementById(`prog${i}`);
+  progEl.style.width = pct + '%';
+  progEl.style.background = remainSec > 15 * 60 ? 'var(--green)' :
+    remainSec > 10 * 60 ? 'var(--amber)' :
+    remainSec > 5 * 60  ? 'var(--orange)' :
+    remainSec > 0       ? 'var(--red)' : 'var(--dark-red)';
+
+  // Card state
+  const card = document.getElementById(`card${i}`);
+  card.dataset.state = remainSec > 15 * 60 ? 'green' :
+    remainSec > 10 * 60 ? 'amber' :
+    remainSec > 5 * 60  ? 'orange' :
+    remainSec > 0       ? 'red' : 'overtime';
+
+  // Check nodes
+  t.nodes.forEach((nd, ni) => {
+    const row = document.getElementById(`nd${i}_${ni}`);
+    if (t.hitNodes.has(nd.label)) {
+      row.className = 'node-row ' + (nd.overtime ? 'is-hit-overtime' : 'is-hit');
+    } else if (totalSec >= nd.eMin * 60) {
+      t.hitNodes.add(nd.label);
+      row.className = 'node-row ' + (nd.overtime ? 'is-hit-overtime' : 'is-hit');
+      if (!nd.silent) triggerAlert(i, nd);
+    } else {
+      const nextHit = t.nodes.some(n2 => !t.hitNodes.has(n2.label) && n2.eMin > nd.eMin);
+      if (!nextHit && !t.hitNodes.has(nd.label)) {
+        row.className = 'node-row is-next';
+      } else {
+        row.className = 'node-row';
+      }
+    }
+  });
+
+  // State: enter overtime
+  if (remainSec <= 0 && t.state === 'running') {
+    t.state = 'overtime';
+  }
+
+  updateTitle();
+}
+
+/* ── Title ── */
+function updateTitle() {
+  const urgent = timers.find(t => t.state === 'overtime');
+  if (urgent) {
+    const totalSec = urgent.pausedSec + (Date.now() - urgent.startTs) / 1000;
+    const overtimeMin = Math.floor((totalSec - urgent.dur * 60) / 60);
+    document.title = `🚨 ${urgent.name} 超时${overtimeMin}min — 峰会议程计时器`;
+    return;
+  }
+  const red = timers.find(t => t.state === 'running');
+  if (!red) { document.title = '峰会议程计时器'; return; }
+  const totalSec = red.pausedSec + (Date.now() - red.startTs) / 1000;
+  const r = red.dur * 60 - totalSec;
+  document.title = `${red.name} ${fmtTime(r)} — 峰会计时`;
+}
+
+/* ── Popup System ── */
+function triggerAlert(i, nd) {
+  const t = timers[i];
+  const totalSec = t.pausedSec + (Date.now() - t.startTs) / 1000;
+  const remainSec = t.dur * 60 - totalSec;
+
+  const subText = remainSec > 0
+    ? `剩余 ${fmtTime(remainSec)} · 已进行 ${fmtTime(totalSec)}`
+    : `超时 ${fmtTime(-remainSec)} · 已进行 ${fmtTime(totalSec)}`;
+
+  showPopup(i, nd.icon, `${t.name}: ${nd.label}`, subText, nd.urgency);
+
+  playBeep(nd.urgency);
+  pushNotif(t.name, nd.label, nd.urgency);
+}
+
+function showPopup(agendaIdx, icon, title, sub, urgency) {
+  const panel = document.getElementById('popupPanel');
+  const id = ++popupIdCounter;
+
+  const card = document.createElement('div');
+  card.className = 'popup-card';
+  card.id = `popup${id}`;
+  card.dataset.urgency = urgency;
+  card.dataset.agendaIdx = agendaIdx;
+
+  card.innerHTML = `
+    <button class="popup-close" onclick="dismissPopup(${id})" title="关闭提醒">✕</button>
+    <div class="popup-icon">${icon}</div>
+    <div class="popup-title">${title}</div>
+    <div class="popup-sub">${sub}</div>
+    <button class="popup-action" onclick="dismissPopup(${id})">知道了</button>
+  `;
+
+  panel.appendChild(card);
+
+  const entry = { el: card };
+  activePopups.set(id, entry);
+}
+
+function dismissPopup(id) {
+  const entry = activePopups.get(id);
+  if (!entry) return;
+  entry.el.classList.add('is-dismissing');
+  setTimeout(() => {
+    if (entry.el.parentNode) entry.el.parentNode.removeChild(entry.el);
+    activePopups.delete(id);
+  }, 300);
+}
+
+function dismissPopupsForAgenda(agendaIdx) {
+  for (const [id, entry] of activePopups) {
+    if (parseInt(entry.el.dataset.agendaIdx) === agendaIdx) {
+      dismissPopup(id);
+    }
+  }
+}
+
+/* ── Audio ── */
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function beep(freq, dur, startAt) {
+  const ctx = getAudio();
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  o.frequency.value = freq; g.gain.value = 0.3;
+  o.start(ctx.currentTime + startAt);
+  o.stop(ctx.currentTime + startAt + dur);
+}
+
+function playBeep(urgency) {
+  if (urgency === 0) return; // silent
+  // Countdown: urgency 1-4
+  if (urgency <= 4) {
+    const freq = 700 + urgency * 120;
+    const len = 0.15 + urgency * 0.03;
+    const gap = 0.18;
+    const count = Math.min(urgency, 5);
+    for (let b = 0; b < count; b++) beep(freq, len, b * (len + gap));
+  }
+  // Overtime: urgency 5-8 — escalating alarm
+  if (urgency >= 5) {
+    const phase = urgency - 5;
+    const freq = 800 + phase * 100;
+    const burstCount = 3 + phase;
+    for (let b = 0; b < burstCount; b++) beep(freq, 0.18, 0.3 + b * 0.24);
+    const rapidCount = 2 + phase;
+    const rapidStart = 0.3 + burstCount * 0.24 + 0.3;
+    for (let b = 0; b < rapidCount; b++) beep(freq + 200, 0.12, rapidStart + b * 0.16);
+  }
+}
+
+function testSound() {
+  playBeep(2);
+}
+
+/* ── Notification ── */
+function checkNotif() {
+  const btn = document.getElementById('notifBtn');
+  if (!NOTIF_SUPPORTED) {
+    btn.className = 'notif-bar unsupported';
+    btn.textContent = '⚠️ 当前浏览器不支持系统通知';
+    btn.onclick = null;
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    btn.className = 'notif-bar granted';
+    btn.textContent = '✅ 系统通知已授权';
+    btn.onclick = null;
+  } else if (Notification.permission === 'denied') {
+    btn.className = 'notif-bar denied';
+    btn.textContent = '❌ 系统通知已被拒绝（请在浏览器设置中开启）';
+    btn.onclick = null;
+  } else {
+    btn.className = 'notif-bar pending';
+    btn.textContent = '🔔 点击授权系统通知';
+    btn.onclick = requestNotif;
+  }
+}
+
+function requestNotif() {
+  if (!NOTIF_SUPPORTED) return;
+  Notification.requestPermission().then(permission => {
+    checkNotif();
+    if (permission === 'granted') {
+      try {
+        new Notification('✅ 授权成功', {
+          body: '峰会议程计时器将在提醒节点推送通知',
+          tag: 'summit-auth-test',
+        });
+      } catch(e) {
+        console.warn('Notification test failed:', e);
+      }
+    }
+  }).catch(err => {
+    console.warn('Notification request failed:', err);
+    checkNotif();
+  });
+}
+
+function pushNotif(agendaName, nodeLabel, urgency) {
+  if (!NOTIF_SUPPORTED || Notification.permission !== 'granted') return;
+  const urgencyWord = urgency >= 5 ? '🚨 紧急' : urgency >= 3 ? '⚠️ 注意' : '⏳ 提醒';
+  try {
+    new Notification(`${urgencyWord} ${agendaName}`, {
+      body: nodeLabel,
+      tag: `summit-${agendaName}-${Date.now()}`,
+      requireInteraction: urgency >= 4,
+    });
+  } catch(e) {
+    console.warn('Push notification failed:', e);
+  }
+}
+
+/* ── QR Modal ── */
+function openQr() {
+  document.getElementById('qrOverlay').classList.add('is-open');
+}
+function closeQr(e) {
+  if (e && e.target !== document.getElementById('qrOverlay')) return;
+  document.getElementById('qrOverlay').classList.remove('is-open');
+}
+
+/* ── Start ── */
+init();
+</script>
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</body>
+</html>
