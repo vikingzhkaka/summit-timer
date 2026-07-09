@@ -497,13 +497,14 @@ footer .stats { margin-left: 6px; }
     <button class="qr-close" onclick="closeShare()">✕</button>
     <div class="share-title">📤 分享配置</div>
     <div class="share-sub">手机扫码或打开链接，自动载入当前议程设置</div>
-    <img id="shareQr" class="share-qr" alt="配置二维码">
+    <img id="shareQr" class="share-qr" alt="配置二维码" onerror="this.style.display='none';var n=document.getElementById('shareErr');if(n)n.style.display='block';">
     <input id="shareLink" class="share-link" readonly>
     <div class="share-actions">
       <button class="btn btn-primary" onclick="copyShareLink(this)">复制链接</button>
       <button class="btn btn-secondary" onclick="closeShare()" style="width:auto;flex:0 0 auto;padding:0 18px;">完成</button>
     </div>
-    <div class="share-note">链接仅含议程名称与时长（不含运行中的计时）。二维码由公开二维码服务生成，介意可只用「复制链接」。</div>
+    <div class="share-note" id="shareErr" style="display:none;color:var(--amber-dark);">二维码图片加载失败（可能网络受限），请用「复制链接」把地址发到手机微信打开。</div>
+    <div class="share-note">链接仅含议程名称与时长（不含运行中的计时）。二维码由公开服务生成，介意可只用「复制链接」。</div>
   </div>
 </div>
 
@@ -896,6 +897,7 @@ function closeQr(e) { if (e && e.target !== document.getElementById('qrOverlay')
 
 /* ── Persist & Share ── */
 const LS_KEY = 'summitTimers';
+const SITE_BASE = 'https://vikingzhkaka.github.io/summit-timer/';
 function saveState() {
   try {
     const data = timers.map(t => ({
@@ -941,7 +943,7 @@ function getConfigs() {
 function shareConfig() {
   const obj = { v: 1, a: timers.map(t => ({ n: t.name, d: t.dur })) };
   const enc = btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
-  const url = location.origin + location.pathname + '#cfg=' + enc;
+  const url = SITE_BASE + '#cfg=' + enc;
   openShare(url);
 }
 function openShare(url) {
