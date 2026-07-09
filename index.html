@@ -67,6 +67,7 @@ header {
 .icon-btn.active { background: var(--green-soft); border-color: var(--green); color: var(--green-dark); }
 .icon-btn.warn { background: var(--amber-soft); border-color: var(--amber); color: var(--amber-dark); }
 .icon-btn.danger { background: var(--red-soft); border-color: var(--red); color: var(--red-dark); }
+.icon-btn svg { width: 18px; height: 18px; flex-shrink: 0; display: block; }
 
 /* ── Quick Guide Banner ── */
 .guide-banner {
@@ -328,6 +329,7 @@ main {
 }
 .nodes-toggle:hover { background: var(--border-strong); color: var(--text); }
 .nodes-toggle-icon { font-size: 14px; transition: transform .25s; display: inline-block; }
+.nodes-toggle-icon svg { width: 14px; height: 14px; vertical-align: -2px; }
 .nodes-toggle.open .nodes-toggle-icon { transform: rotate(90deg); }
 .nodes-hint { font-size: 11px; color: var(--text-light); font-weight: 600; }
 .nodes-list { display: flex; flex-direction: column; gap: 6px; }
@@ -403,6 +405,16 @@ footer {
 footer a, footer .qr-trigger { color: var(--text-mid); text-decoration: none; font-weight: 700; cursor: pointer; }
 footer a:hover, footer .qr-trigger:hover { color: var(--text); }
 footer .stats { margin-left: 6px; }
+footer .stats-link, footer .clear-store { color: var(--text-mid); font-weight: 700; cursor: pointer; }
+footer .stats-link:hover { color: var(--text); }
+footer .clear-store:hover { color: var(--red-dark); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.card-status { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
+.card-status.green { background: var(--green-soft); color: var(--green-dark); }
+.card-status.amber { background: var(--amber-soft); color: var(--amber-dark); }
+.card-status.orange { background: var(--orange-soft); color: var(--orange-dark); }
+.card-status.red { background: var(--red-soft); color: var(--red-dark); }
+.card-status.overtime { background: var(--dark-red); color: #fff; }
 
 /* ── QR Modal ── */
 .qr-overlay {
@@ -451,10 +463,10 @@ footer .stats { margin-left: 6px; }
       </div>
     </div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="openGuide()" title="使用说明">📖 说明</button>
-      <button class="icon-btn" onclick="shareConfig()" title="分享配置到手机">🔗 配置</button>
-      <button class="icon-btn" id="notifBtn" title="系统通知">🔔 通知</button>
-      <button class="icon-btn" onclick="testSound()" title="测试提醒音">🔊 测试</button>
+      <button class="icon-btn" onclick="openGuide()" title="使用说明" aria-label="使用说明"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> 说明</button>
+      <button class="icon-btn" onclick="shareConfig()" title="分享配置到手机" aria-label="分享配置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> 配置</button>
+      <button class="icon-btn" id="notifBtn" title="系统通知" aria-label="系统通知"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> 通知</button>
+      <button class="icon-btn" onclick="testSound()" title="测试提醒音" aria-label="测试提醒音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> 测试</button>
     </div>
   </div>
 </header>
@@ -480,8 +492,9 @@ footer .stats { margin-left: 6px; }
 
 <footer>
   Powered by <span class="qr-trigger" onclick="openQr()">Vikingzh</span>
-  <span class="stats">· 浏览 <span id="busuanzi_value_page_pv">0</span> 次 · 访客 <span id="busuanzi_value_site_uv">0</span> 人</span>
+  <span class="stats">· <a class="stats-link" href="https://analytics.umami.is" target="_blank" rel="noopener" title="在 Umami 后台查看可查的访问数据">📊 访问统计</a> · <span class="clear-store" onclick="clearStore()" title="清空本地存档（名称/时长/计时），恢复默认">清空存档</span></span>
 </footer>
+<div id="srAlert" class="sr-only" aria-live="assertive" role="alert"></div>
 
 <div class="qr-overlay" id="qrOverlay" onclick="closeQr(event)">
   <div class="qr-card" onclick="event.stopPropagation()">
@@ -504,7 +517,7 @@ footer .stats { margin-left: 6px; }
       <button class="btn btn-secondary" onclick="closeShare()" style="width:auto;flex:0 0 auto;padding:0 18px;">完成</button>
     </div>
     <div class="share-note" id="shareErr" style="display:none;color:var(--amber-dark);">二维码图片加载失败（可能网络受限），请用「复制链接」把地址发到手机微信打开。</div>
-    <div class="share-note">链接仅含议程名称与时长（不含运行中的计时）。二维码由公开服务生成，介意可只用「复制链接」。</div>
+    <div class="share-note">链接含议程名称、时长及当前计时状态，手机打开可接着计时。二维码由公开服务生成，介意可只用「复制链接」。</div>
   </div>
 </div>
 
@@ -593,14 +606,14 @@ function buildNodes(dur) {
 
 function init() {
   const shared = getConfigs();
-  const base = shared || CONFIGS;
+  const base = (shared ? shared.cfgs : CONFIGS);
   timers = base.map(c => ({
     name: c.name, dur: c.duration, defaultDur: c.duration,
     state: 'idle', startTs: null, pausedSec: 0, intervalId: null,
     hitNodes: new Set(), nodes: buildNodes(c.duration), nodesOpen: false,
   }));
   if (!shared) applySaved(loadState());
-  else saveState();
+  else { applySharedRuntime(shared.runtime); saveState(); }
   renderCards(); checkNotif();
   // Resume timers that were running/paused before reload
   timers.forEach((t, i) => {
@@ -633,6 +646,7 @@ function renderSetup(card, t, i) {
         <input class="card-name" value="${t.name}" onchange="timers[${i}].name=this.value;saveState()" placeholder="输入议程名称">
         <span class="card-name-hint">✏️ 名称可编辑</span>
       </div>
+      <span class="card-status" id="st${i}"></span>
     </div>
     <div class="card-body">
       <div class="time-display">${fmtTime(t.dur * 60)}</div>
@@ -650,7 +664,7 @@ function renderSetup(card, t, i) {
     </div>
     <div class="nodes-section ${t.nodesOpen ? 'open' : ''}">
       <div class="nodes-header" onclick="toggleNodes(${i})">
-        <span class="nodes-toggle ${t.nodesOpen ? 'open' : ''}"><span class="nodes-toggle-icon">📋</span> 提醒节点</span>
+        <span class="nodes-toggle ${t.nodesOpen ? 'open' : ''}"><span class="nodes-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></span> 提醒节点</span>
         <span class="nodes-hint">${t.nodesOpen ? '点击收起 ↑' : '点击展开 ↓'}</span>
       </div>
       <div class="nodes-panel ${t.nodesOpen ? 'open' : ''}" id="nPanel${i}">
@@ -669,6 +683,7 @@ function renderLive(card, t, i) {
         <input class="card-name" value="${t.name}" onchange="timers[${i}].name=this.value;saveState()" placeholder="议程名称">
         <span class="card-name-hint">✏️ 名称可编辑</span>
       </div>
+      <span class="card-status" id="st${i}"></span>
     </div>
     <div class="card-body">
       <div class="time-display ${remainSec <= 0 ? 'overtime' : ''}" id="rem${i}">${fmtTime(remainSec)}</div>
@@ -685,7 +700,7 @@ function renderLive(card, t, i) {
     </div>
     <div class="nodes-section ${t.nodesOpen ? 'open' : ''}">
       <div class="nodes-header" onclick="toggleNodes(${i})">
-        <span class="nodes-toggle ${t.nodesOpen ? 'open' : ''}"><span class="nodes-toggle-icon">📋</span> 提醒节点</span>
+        <span class="nodes-toggle ${t.nodesOpen ? 'open' : ''}"><span class="nodes-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></span> 提醒节点</span>
         <span class="nodes-hint">${t.nodesOpen ? '点击收起 ↑' : '点击展开 ↓'}</span>
       </div>
       <div class="nodes-panel ${t.nodesOpen ? 'open' : ''}" id="nPanel${i}">
@@ -792,7 +807,10 @@ function updateBtn(i) {
 
 function updateCardState(i, card) {
   const t = timers[i], remainSec = t.dur * 60 - getElapsed(t);
-  card.dataset.state = remainSec > 15 * 60 ? 'green' : remainSec > 10 * 60 ? 'amber' : remainSec > 5 * 60 ? 'orange' : remainSec > 0 ? 'red' : 'overtime';
+  const st = remainSec > 15 * 60 ? 'green' : remainSec > 10 * 60 ? 'amber' : remainSec > 5 * 60 ? 'orange' : remainSec > 0 ? 'red' : 'overtime';
+  card.dataset.state = st;
+  const el = document.getElementById(`st${i}`);
+  if (el) { el.className = 'card-status ' + st; el.textContent = { green: '正常', amber: '关注', orange: '紧迫', red: '危急', overtime: '超时' }[st]; }
 }
 
 function tick(i) {
@@ -818,7 +836,7 @@ function tick(i) {
       saveState();
     } else { row.className = totalSec + 60 > nd.eMin * 60 ? 'node-row next' : 'node-row'; }
   });
-  if (remainSec <= 0 && t.state === 'running') t.state = 'overtime';
+  if (remainSec <= 0 && t.state === 'running') { t.state = 'overtime'; const sr = document.getElementById('srAlert'); if (sr) sr.textContent = t.name + ' 已超时'; }
   updateTitle();
 }
 
@@ -932,16 +950,34 @@ function getConfigs() {
   try {
     const obj = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
     if (!obj || !Array.isArray(obj.a) || !obj.a.length) return null;
-    const cfgs = obj.a.slice(0, 8).map(x => ({
-      name: String(x.n == null ? '' : x.n).slice(0, 40),
-      duration: Math.max(DUR_MIN, Math.min(DUR_MAX, Number(x.d) || 15))
-    }));
-    if (cfgs.length) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} return cfgs; }
+    const cfgs = [], runtime = [];
+    obj.a.slice(0, 8).forEach(x => {
+      cfgs.push({ name: String(x.n == null ? '' : x.n).slice(0, 40), duration: Math.max(DUR_MIN, Math.min(DUR_MAX, Number(x.d) || 15)) });
+      runtime.push({ s: x.s, ts: x.ts, ps: x.ps, h: x.h });
+    });
+    if (cfgs.length) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} return { cfgs, runtime }; }
   } catch (e) {}
   return null;
 }
+function applySharedRuntime(rt) {
+  if (!rt || !Array.isArray(rt)) return;
+  rt.forEach((s, i) => {
+    const t = timers[i]; if (!t || !s) return;
+    if (s.s && (s.s === 'running' || s.s === 'overtime' || s.s === 'paused') && s.ts) {
+      t.state = s.s; t.startTs = s.ts; t.pausedSec = s.ps || 0;
+    }
+    if (Array.isArray(s.h)) t.hitNodes = new Set(s.h);
+    t.nodes = buildNodes(t.dur);
+  });
+}
 function shareConfig() {
-  const obj = { v: 1, a: timers.map(t => ({ n: t.name, d: t.dur })) };
+  const obj = { v: 2, a: timers.map(t => ({
+    n: t.name, d: t.dur,
+    s: (t.state === 'running' || t.state === 'overtime' || t.state === 'paused') ? t.state : undefined,
+    ts: (t.state === 'running' || t.state === 'overtime' || t.state === 'paused') ? t.startTs : undefined,
+    ps: t.state === 'paused' ? t.pausedSec : undefined,
+    h: t.hitNodes.size ? Array.from(t.hitNodes) : undefined
+  })) };
   const enc = btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
   const url = SITE_BASE + '#cfg=' + enc;
   openShare(url);
@@ -959,6 +995,11 @@ function copyShareLink(btn) {
   else try { document.execCommand('copy'); } catch (e) {}
   if (btn) { const t = btn.textContent; btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = t, 1500); }
 }
+function clearStore() {
+  if (!confirm('确定清空本地存档？\n议程名称 / 时长 / 运行中的计时都会恢复为默认，此操作不可撤销。')) return;
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  location.reload();
+}
 
 /* ── Guide ── */
 function dismissGuide() {
@@ -975,6 +1016,7 @@ if (localStorage.getItem('summitGuideDismissed') === '1') {
   document.getElementById('guideBanner').classList.add('guide-hidden');
 }
 </script>
-<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<!-- 访问统计：Umami（可查后台）。用法：1) 到 umami.is 注册免费账号；2) 新建站点拿到 website-id；3) 把下面 data-website-id 的占位符替换掉即可。不填则统计不生效，页面照常运行。 -->
+<script async defer src="https://analytics.umami.is/script.js" data-website-id="9241670a-3a7f-4be4-8af0-010587536446"></script>
 </body>
 </html>
