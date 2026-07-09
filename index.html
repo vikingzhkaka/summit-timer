@@ -355,6 +355,7 @@ main {
   transition: transform .3s cubic-bezier(.2,.8,.3,1.2), opacity .3s;
 }
 .popup-overlay.has-popups .popup-card { transform: scale(1); opacity: 1; }
+.popup-card.is-dismissing { transform: scale(.9); opacity: 0; }
 .popup-card.urgency-1 { border-top: 6px solid var(--green); }
 .popup-card.urgency-2 { border-top: 6px solid var(--amber); }
 .popup-card.urgency-3 { border-top: 6px solid var(--orange); }
@@ -803,8 +804,11 @@ function showPopup(agendaIdx, icon, title, sub, urgency) {
 function dismissPopup(id) {
   const entry = activePopups.get(id); if (!entry) return;
   entry.el.classList.add('is-dismissing');
-  setTimeout(() => { if (entry.el.parentNode) entry.el.parentNode.removeChild(entry.el); activePopups.delete(id); }, 300);
-  if (activePopups.size === 0) setTimeout(() => document.getElementById('popupPanel').classList.remove('has-popups'), 50);
+  setTimeout(() => {
+    if (entry.el.parentNode) entry.el.parentNode.removeChild(entry.el);
+    activePopups.delete(id);
+    if (activePopups.size === 0) document.getElementById('popupPanel').classList.remove('has-popups');
+  }, 300);
 }
 function dismissPopupsForAgenda(agendaIdx) {
   for (const [id, entry] of activePopups) if (parseInt(entry.el.dataset.agendaIdx) === agendaIdx) dismissPopup(id);
