@@ -421,6 +421,18 @@ footer .stats { margin-left: 6px; }
 .qr-title { font-size: 18px; font-weight: 900; }
 .qr-sub { font-size: 13px; color: var(--text-light); margin: 4px 0 16px; }
 .qr-img { width: 100%; max-width: 240px; border-radius: 16px; display: block; margin: 0 auto; }
+
+/* ── Share Config Modal ── */
+.share-overlay { position: fixed; inset: 0; z-index: 650; background: rgba(15,23,42,.55); display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+.share-overlay.open { display: flex; }
+.share-card { background: var(--card-bg); border-radius: 24px; padding: 26px 22px 20px; max-width: 360px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.25); text-align: center; position: relative; animation: qr-pop .35s cubic-bezier(.2,.8,.3,1.2); }
+.share-title { font-size: 18px; font-weight: 900; }
+.share-sub { font-size: 13px; color: var(--text-light); margin: 4px 0 14px; }
+.share-qr { width: 100%; max-width: 220px; border-radius: 14px; display: block; margin: 0 auto 14px; background: #fff; padding: 8px; box-sizing: border-box; }
+.share-link { width: 100%; box-sizing: border-box; font-size: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text-mid); text-align: center; word-break: break-all; }
+.share-actions { display: flex; gap: 10px; margin-top: 12px; }
+.share-actions .btn { flex: 1; height: 44px; font-size: 14px; }
+.share-note { font-size: 11px; color: var(--text-light); margin-top: 12px; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -440,6 +452,7 @@ footer .stats { margin-left: 6px; }
     </div>
     <div class="header-actions">
       <button class="icon-btn" onclick="openGuide()" title="使用说明">📖 说明</button>
+      <button class="icon-btn" onclick="shareConfig()" title="分享配置到手机">🔗 配置</button>
       <button class="icon-btn" id="notifBtn" title="系统通知">🔔 通知</button>
       <button class="icon-btn" onclick="testSound()" title="测试提醒音">🔊 测试</button>
     </div>
@@ -476,6 +489,21 @@ footer .stats { margin-left: 6px; }
     <div class="qr-title">联系 Viking</div>
     <div class="qr-sub">扫码添加微信好友</div>
     <img src="qr-code.jpg" alt="Viking 微信二维码" class="qr-img">
+  </div>
+</div>
+
+<div class="share-overlay" id="shareOverlay" onclick="closeShare(event)">
+  <div class="share-card" onclick="event.stopPropagation()">
+    <button class="qr-close" onclick="closeShare()">✕</button>
+    <div class="share-title">📤 分享配置</div>
+    <div class="share-sub">手机扫码或打开链接，自动载入当前议程设置</div>
+    <img id="shareQr" class="share-qr" alt="配置二维码">
+    <input id="shareLink" class="share-link" readonly>
+    <div class="share-actions">
+      <button class="btn btn-primary" onclick="copyShareLink(this)">复制链接</button>
+      <button class="btn btn-secondary" onclick="closeShare()" style="width:auto;flex:0 0 auto;padding:0 18px;">完成</button>
+    </div>
+    <div class="share-note">链接仅含议程名称与时长（不含运行中的计时）。二维码由公开二维码服务生成，介意可只用「复制链接」。</div>
   </div>
 </div>
 
@@ -563,12 +591,27 @@ function buildNodes(dur) {
 }
 
 function init() {
-  timers = CONFIGS.map(c => ({
+  const shared = getConfigs();
+  const base = shared || CONFIGS;
+  timers = base.map(c => ({
     name: c.name, dur: c.duration, defaultDur: c.duration,
     state: 'idle', startTs: null, pausedSec: 0, intervalId: null,
     hitNodes: new Set(), nodes: buildNodes(c.duration), nodesOpen: false,
   }));
+  if (!shared) applySaved(loadState());
+  else saveState();
   renderCards(); checkNotif();
+  // Resume timers that were running/paused before reload
+  timers.forEach((t, i) => {
+    const card = document.getElementById(`card${i}`); if (!card) return;
+    if (t.state === 'running' || t.state === 'overtime') {
+      renderLive(card, t, i);
+      t.intervalId = setInterval(() => tick(i), 1000);
+      updateBtn(i);
+    } else if (t.state === 'paused') {
+      renderLive(card, t, i); updateBtn(i);
+    }
+  });
 }
 
 /* ── Render ── */
@@ -586,7 +629,7 @@ function renderSetup(card, t, i) {
   card.innerHTML = `
     <div class="card-topbar">
       <div class="card-name-row">
-        <input class="card-name" value="${t.name}" onchange="timers[${i}].name=this.value" placeholder="输入议程名称">
+        <input class="card-name" value="${t.name}" onchange="timers[${i}].name=this.value;saveState()" placeholder="输入议程名称">
         <span class="card-name-hint">✏️ 名称可编辑</span>
       </div>
     </div>
@@ -622,7 +665,7 @@ function renderLive(card, t, i) {
   card.innerHTML = `
     <div class="card-topbar">
       <div class="card-name-row">
-        <input class="card-name" value="${t.name}" onchange="timers[${i}].name=this.value" placeholder="议程名称">
+        <input class="card-name" value="${t.name}" onchange="timers[${i}].name=this.value;saveState()" placeholder="议程名称">
         <span class="card-name-hint">✏️ 名称可编辑</span>
       </div>
     </div>
@@ -676,7 +719,7 @@ function getElapsed(t) {
 
 function setNodesOpen(i, open) {
   const t = timers[i]; if (t.nodesOpen === open) return;
-  t.nodesOpen = open;
+  t.nodesOpen = open; saveState();
   const panel = document.getElementById(`nPanel${i}`);
   if (panel) panel.classList.toggle('open', open);
   const section = panel && panel.closest('.nodes-section');
@@ -696,7 +739,7 @@ function stepDur(i, delta) {
   const t = timers[i]; if (t.state !== 'idle') return;
   const newVal = Math.max(DUR_MIN, Math.min(DUR_MAX, t.dur + delta * DUR_STEP));
   if (newVal === t.dur) return;
-  t.dur = newVal; t.nodes = buildNodes(newVal); t.hitNodes = new Set();
+  t.dur = newVal; t.nodes = buildNodes(newVal); t.hitNodes = new Set(); saveState();
   const card = document.getElementById(`card${i}`); renderSetup(card, t, i);
 }
 
@@ -720,12 +763,13 @@ function toggleStart(i) {
       const clk = document.getElementById(`ndClk${i}_${ni}`);
       if (clk) clk.textContent = fmtClock(t.startTs + nd.eMin * 60000);
     });
+    saveState();
   } else if (t.state === 'running' || t.state === 'overtime') {
     clearInterval(t.intervalId); t.pausedSec += (Date.now() - t.startTs) / 1000; t.state = 'paused';
-    updateBtn(i); tick(i);
+    updateBtn(i); tick(i); saveState();
   } else if (t.state === 'paused') {
     t.startTs = Date.now(); t.state = 'running'; t.intervalId = setInterval(() => tick(i), 1000);
-    updateBtn(i); tick(i);
+    updateBtn(i); tick(i); saveState();
   }
 }
 
@@ -734,7 +778,7 @@ function resetTimer(i) {
   t.state = 'idle'; t.startTs = null; t.pausedSec = 0; t.hitNodes = new Set(); t.nodesOpen = false;
   t.dur = t.defaultDur; t.nodes = buildNodes(t.dur);
   const card = document.getElementById(`card${i}`); card.dataset.state = 'idle';
-  renderSetup(card, t, i); updateTitle(); dismissPopupsForAgenda(i);
+  renderSetup(card, t, i); updateTitle(); dismissPopupsForAgenda(i); saveState();
 }
 
 function updateBtn(i) {
@@ -770,6 +814,7 @@ function tick(i) {
       t.hitNodes.add(nd.label); row.className = 'node-row ' + (nd.overtime ? 'hit-overtime' : 'hit');
       if (!t.nodesOpen) setNodesOpen(i, true);
       if (!nd.silent) triggerAlert(i, nd);
+      saveState();
     } else { row.className = totalSec + 60 > nd.eMin * 60 ? 'node-row next' : 'node-row'; }
   });
   if (remainSec <= 0 && t.state === 'running') t.state = 'overtime';
@@ -848,6 +893,70 @@ function pushNotif(agendaName, nodeLabel, urgency) {
 /* ── QR ── */
 function openQr() { document.getElementById('qrOverlay').classList.add('open'); }
 function closeQr(e) { if (e && e.target !== document.getElementById('qrOverlay')) return; document.getElementById('qrOverlay').classList.remove('open'); }
+
+/* ── Persist & Share ── */
+const LS_KEY = 'summitTimers';
+function saveState() {
+  try {
+    const data = timers.map(t => ({
+      name: t.name, dur: t.dur, defaultDur: t.dur,
+      state: t.state, startTs: t.startTs, pausedSec: t.pausedSec,
+      hitNodes: Array.from(t.hitNodes), nodesOpen: t.nodesOpen
+    }));
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+  } catch (e) {}
+}
+function loadState() {
+  try { const s = localStorage.getItem(LS_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+}
+function applySaved(saved) {
+  if (!saved || !Array.isArray(saved) || saved.length !== timers.length) return;
+  saved.forEach((s, i) => {
+    const t = timers[i]; if (!t) return;
+    if (typeof s.name === 'string') t.name = s.name;
+    if (typeof s.dur === 'number' && s.dur >= DUR_MIN && s.dur <= DUR_MAX) {
+      t.dur = s.dur; t.defaultDur = s.dur; t.nodes = buildNodes(s.dur);
+    }
+    t.nodesOpen = !!s.nodesOpen;
+    t.hitNodes = new Set(Array.isArray(s.hitNodes) ? s.hitNodes : []);
+    if ((s.state === 'running' || s.state === 'overtime' || s.state === 'paused') && s.startTs) {
+      t.state = s.state; t.startTs = s.startTs; t.pausedSec = s.pausedSec || 0;
+    }
+  });
+}
+function getConfigs() {
+  const m = location.hash.match(/cfg=([^&]+)/);
+  if (!m) return null;
+  try {
+    const obj = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    if (!obj || !Array.isArray(obj.a) || !obj.a.length) return null;
+    const cfgs = obj.a.slice(0, 8).map(x => ({
+      name: String(x.n == null ? '' : x.n).slice(0, 40),
+      duration: Math.max(DUR_MIN, Math.min(DUR_MAX, Number(x.d) || 15))
+    }));
+    if (cfgs.length) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} return cfgs; }
+  } catch (e) {}
+  return null;
+}
+function shareConfig() {
+  const obj = { v: 1, a: timers.map(t => ({ n: t.name, d: t.dur })) };
+  const enc = btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+  const url = location.origin + location.pathname + '#cfg=' + enc;
+  openShare(url);
+}
+function openShare(url) {
+  document.getElementById('shareLink').value = url;
+  document.getElementById('shareQr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(url);
+  document.getElementById('shareOverlay').classList.add('open');
+  if (navigator.clipboard) navigator.clipboard.writeText(url).catch(() => {});
+}
+function closeShare(e) { if (e && e.target !== document.getElementById('shareOverlay')) return; document.getElementById('shareOverlay').classList.remove('open'); }
+function copyShareLink(btn) {
+  const inp = document.getElementById('shareLink'); if (inp) inp.select();
+  if (navigator.clipboard) navigator.clipboard.writeText(inp.value).catch(() => {});
+  else try { document.execCommand('copy'); } catch (e) {}
+  if (btn) { const t = btn.textContent; btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = t, 1500); }
+}
 
 /* ── Guide ── */
 function dismissGuide() {
