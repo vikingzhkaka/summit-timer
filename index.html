@@ -117,6 +117,7 @@ header {
 .guide-color-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
 .guide-color-dot { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
 .guide-color-label { font-size: 13px; color: var(--text-mid); font-weight: 600; }
+.guide-color-foot { margin-top: 8px; font-size: 12px; color: var(--text-light); line-height: 1.6; }
 
 /* Tooltip bubble for unsupported */
 .icon-btn[data-tip]:after {
@@ -564,24 +565,14 @@ footer .stats-link:hover #busuanzi_value_page_uv { color: var(--green); }
       </div>
     </div>
     <div class="guide-section">
-      <div class="guide-section-title">🔔 提醒节点</div>
+      <div class="guide-section-title">⏱ 计时状态与提醒</div>
       <div class="guide-section-body">
-        <ul>
-          <li>时长 ≥ 30min → 半程提醒</li>
-          <li>剩余 15min / 10min / 5min → 分级提醒</li>
-          <li>超时后 → 超时5min / 10min / 15min 逐级加重</li>
-          <li>点击 📋 查看所有节点的预计触发时间</li>
-        </ul>
-      </div>
-    </div>
-    <div class="guide-section">
-      <div class="guide-section-title">🎨 边框颜色含义</div>
-      <div class="guide-section-body">
-        <div class="guide-color-row"><span class="guide-color-dot" style="background:var(--green)"></span><span class="guide-color-label">剩余 > 15min — 正常</span></div>
-        <div class="guide-color-row"><span class="guide-color-dot" style="background:var(--amber)"></span><span class="guide-color-label">剩余 10~15min — 关注</span></div>
-        <div class="guide-color-row"><span class="guide-color-dot" style="background:var(--orange)"></span><span class="guide-color-label">剩余 5~10min — 紧迫</span></div>
-        <div class="guide-color-row"><span class="guide-color-dot" style="background:var(--red)"></span><span class="guide-color-label">剩余 < 5min — 危急</span></div>
-        <div class="guide-color-row"><span class="guide-color-dot" style="background:var(--dark-red)"></span><span class="guide-color-label">已超时 — 闪烁红色</span></div>
+        <div class="guide-color-row"><span class="guide-color-dot" style="background:var(--green)"></span><span class="guide-color-label">剩余 &gt; 15min — 正常（时长≥30min 时半程提醒一次）</span></div>
+        <div class="guide-color-row"><span class="guide-color-dot" style="background:var(--amber)"></span><span class="guide-color-label">剩余 10~15min — 关注（含 15min 提醒）</span></div>
+        <div class="guide-color-row"><span class="guide-color-dot" style="background:var(--orange)"></span><span class="guide-color-label">剩余 5~10min — 紧迫（10min 提醒）</span></div>
+        <div class="guide-color-row"><span class="guide-color-dot" style="background:var(--red)"></span><span class="guide-color-label">剩余 &lt; 5min — 危急（5min 提醒）</span></div>
+        <div class="guide-color-row"><span class="guide-color-dot" style="background:var(--dark-red)"></span><span class="guide-color-label">已超时 — 闪烁深红（超时 5/10/15min 逐级加重）</span></div>
+        <div class="guide-color-foot">点击 📋 查看所有节点的预计触发时间</div>
       </div>
     </div>
     <div class="guide-section">
