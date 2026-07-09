@@ -138,11 +138,11 @@ main {
 /* Mobile compact tweaks */
 @media (max-width: 640px) {
   header { padding: 10px 12px; }
-  .header-inner { flex-wrap: wrap; gap: 10px; }
-  .brand { gap: 8px; }
+  .header-inner { flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+  .brand { gap: 8px; justify-content: center; }
   .brand-icon { width: 44px; height: 44px; border-radius: 12px; }
   .brand-icon svg { width: 28px; height: 28px; }
-  .brand-text h1 { font-size: 17px; gap: 6px; }
+  .brand-text h1 { font-size: 17px; gap: 6px; justify-content: center; }
   .version-badge { font-size: 10px; padding: 1px 6px; border-radius: 6px; }
   .header-actions { flex: 1 1 100%; justify-content: center; gap: 10px; }
   .icon-btn { height: 40px; min-width: 40px; padding: 0 10px; font-size: 13px; gap: 4px; border-radius: 10px; }
@@ -159,8 +159,14 @@ main {
   .guide-banner { padding: 0 12px; }
   .guide-inner { padding: 12px 14px; gap: 10px; margin-bottom: 14px; }
   .guide-title { font-size: 13px; }
-  .guide-steps { gap: 8px 12px; }
-  .guide-step { font-size: 12px; }
+  .guide-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .guide-step {
+    font-size: 12px; font-weight: 600;
+    background: var(--card-bg);
+    border: 1px solid rgba(34,197,94,.25);
+    border-radius: 10px; padding: 9px 10px;
+    align-items: center; gap: 5px; line-height: 1.3;
+  }
 }
 
 @media (max-width: 400px) {
