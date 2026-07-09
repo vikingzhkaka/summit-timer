@@ -405,9 +405,16 @@ footer {
 footer a, footer .qr-trigger { color: var(--text-mid); text-decoration: none; font-weight: 700; cursor: pointer; }
 footer a:hover, footer .qr-trigger:hover { color: var(--text); }
 footer .stats { margin-left: 6px; }
-footer .stats-link, footer .clear-store { color: var(--text-mid); font-weight: 700; cursor: pointer; }
+footer .stats-link { color: var(--text-mid); font-weight: 700; cursor: pointer; }
 footer .stats-link:hover { color: var(--text); }
-footer .clear-store:hover { color: var(--red-dark); }
+/* 底部统计数字：让不蒜子计数更可视化（强调色 + 等宽） */
+footer .stats-link #busuanzi_value_page_pv,
+footer .stats-link #busuanzi_value_page_uv {
+  color: var(--green-dark); font-variant-numeric: tabular-nums; font-weight: 800;
+  padding: 0 1px;
+}
+footer .stats-link:hover #busuanzi_value_page_pv,
+footer .stats-link:hover #busuanzi_value_page_uv { color: var(--green); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .card-status { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
 .card-status.green { background: var(--green-soft); color: var(--green-dark); }
@@ -447,10 +454,12 @@ footer .clear-store:hover { color: var(--red-dark); }
 .share-note { font-size: 11px; color: var(--text-light); margin-top: 12px; line-height: 1.5; }
 .share-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 12px; color: var(--text-light); font-size: 12px; font-weight: 700; }
 .share-divider::before, .share-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-.settings-list { display: flex; flex-direction: column; gap: 10px; }
-.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.settings-label { font-size: 14px; font-weight: 600; color: var(--text-mid); }
-.share-card .icon-btn { height: 38px; min-width: auto; padding: 0 12px; }
+.settings-list { display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; }
+.settings-row + .settings-row { border-top: 1px solid var(--border); }
+.settings-label { font-size: 14px; font-weight: 600; color: var(--text-mid); display: flex; align-items: center; gap: 8px; }
+.settings-label svg { width: 16px; height: 16px; }
+.share-card .icon-btn { height: 34px; min-width: auto; padding: 0 14px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -471,7 +480,6 @@ footer .clear-store:hover { color: var(--red-dark); }
     <div class="header-actions">
       <button class="icon-btn" onclick="openGuide()" title="使用说明" aria-label="使用说明"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> 说明</button>
       <button class="icon-btn" onclick="shareConfig()" title="分享配置到手机" aria-label="分享配置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> 配置</button>
-      <button class="icon-btn" onclick="clearStore()" title="清空本地存档" aria-label="清空本地存档"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> 清空</button>
     </div>
   </div>
 </header>
@@ -497,7 +505,7 @@ footer .clear-store:hover { color: var(--red-dark); }
 
 <footer>
   Powered by <span class="qr-trigger" onclick="openQr()">Vikingzh</span>
-  <span class="stats">· <a class="stats-link" href="https://analytics.umami.is" target="_blank" rel="noopener" title="在 Umami 后台查看可查的访问数据">📊 访问统计</a></span>
+  <span class="stats">· <a class="stats-link" href="https://analytics.umami.is" target="_blank" rel="noopener" title="访客可见计数（不蒜子）· 点开查看管理员详细统计（Umami）">👁 浏览 <span id="busuanzi_value_page_pv">0</span> 次 · 访客 <span id="busuanzi_value_page_uv">0</span> 人</a></span>
 </footer>
 <div id="srAlert" class="sr-only" aria-live="assertive" role="alert"></div>
 
@@ -526,12 +534,16 @@ footer .clear-store:hover { color: var(--red-dark); }
     <div class="share-divider"><span>设置</span></div>
     <div class="settings-list">
       <div class="settings-row">
-        <span class="settings-label">🔊 提示音</span>
-        <button class="btn btn-secondary" onclick="testSound()">测试</button>
+        <span class="settings-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> 提示音</span>
+        <button class="icon-btn" onclick="testSound()" title="测试提醒音" aria-label="测试提醒音">测试</button>
       </div>
       <div class="settings-row">
-        <span class="settings-label">🔔 系统通知</span>
-        <button class="icon-btn" id="notifBtn" title="系统通知" aria-label="系统通知"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> 通知</button>
+        <span class="settings-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> 系统通知</span>
+        <button class="icon-btn" id="notifBtn" title="系统通知" aria-label="系统通知">通知</button>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> 本地存档</span>
+        <button class="icon-btn" onclick="clearStore()" title="清空本地存档" aria-label="清空本地存档">清空</button>
       </div>
     </div>
   </div>
@@ -1032,7 +1044,9 @@ if (localStorage.getItem('summitGuideDismissed') === '1') {
   document.getElementById('guideBanner').classList.add('guide-hidden');
 }
 </script>
-<!-- 访问统计：Umami（可查后台）。用法：1) 到 umami.is 注册免费账号；2) 新建站点拿到 website-id；3) 把下面 data-website-id 的占位符替换掉即可。不填则统计不生效，页面照常运行。 -->
+<!-- 访问统计：不蒜子（访客可见的浏览/访客计数，公开显示） -->
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<!-- 访问统计：Umami（管理员后台，可查详细数据）。点击底部数字即跳转此处。 -->
 <script async defer src="https://analytics.umami.is/script.js" data-website-id="9241670a-3a7f-4be4-8af0-010587536446"></script>
 </body>
 </html>
